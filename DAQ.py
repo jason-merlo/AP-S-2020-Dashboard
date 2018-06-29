@@ -8,9 +8,9 @@ try:
     import nidaqmx              # Used for NI-DAQ hardware
 except ImportError:
     print('Warning: nidaqmx module not imported')
-import random                   # Used for development purposes only
 from threading import Thread    # Used for threading sampling function
 from time import sleep          # Used for sleeping sampling thread
+import numpy as np
 
 
 class DAQ:
@@ -40,6 +40,12 @@ class DAQ:
         if daq_type == "nidaq":
             self.sample_mode = sample_mode
             self.dev_string = dev_string
+            # Get number of channels to sample
+            if self.dev_string[-2] == ':':
+                self.num_channels = int(
+                    self.dev_string[-1]) - int(self.dev_string[-3]) + 1
+            else:
+                self.num_channels = int(self.dev_string[-1]) + 1
 
             # Create new sampling task
             try:
@@ -70,10 +76,10 @@ class DAQ:
             pass  # TODO insert pyaudio support here
 
         # Create data member to store samples
-        self.data = []
+        self.data = np.empty((self.num_channels, self.sample_size),)
 
         # Spawn sampling thread
-        self.continue_sampling = True
+        self.running = True
         self.t_sampling = Thread(target=self.sample_loop)
         self.t_sampling.start()
 
@@ -82,10 +88,11 @@ class DAQ:
         Calls get_samples forever
         """
         sleep_time = self.sample_size / self.sample_rate
-        while self.continue_sampling:
+        while self.running:
             self.get_samples()
+            print("daq updated...")
+            print("daq.running: ", self.running)
             sleep(sleep_time)
-            print("looped!")
         print("Sampling thread stopped.")
 
     def get_samples(self):
@@ -96,19 +103,7 @@ class DAQ:
         task -- nidaqmx task object, returned from open_task_channels()
         """
         if self.fake_data:
-            # Get number of channels to sample
-            if self.dev_string[-2] == ':':
-                num_channels = int(
-                    self.dev_string[-1]) - int(self.dev_string[-3])
-            else:
-                num_channels = int(self.dev_string[-1])
-
-            self.data = []
-            # Fill array of fake data
-            for i in range(num_channels):
-                self.data.append([])
-                for j in range(self.sample_size):
-                    self.data[i].append(random.uniform(1e-14, 1e-2))
+            self.data = np.random.randn(self.num_channels, self.sample_size)
         else:
             self.data = self.task.read(
                 number_of_samples_per_channel=self.sample_size)
@@ -117,4 +112,4 @@ class DAQ:
         if self.daq_type == "nidaq" and self.fake_data is False:
             self.task.close()  # Close nidaq gracefully
         print("Stopping sampling thread...")
-        self.continue_sampling = False
+        self.running = False
