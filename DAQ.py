@@ -6,19 +6,21 @@ Dependencies: nidaqmx, random, threading, time
 """
 try:
     import nidaqmx              # Used for NI-DAQ hardware
+    from nidaqmx import stream_readers
 except ImportError:
     print('Warning: nidaqmx module not imported')
 from threading import Thread    # Used for threading sampling function
 from time import sleep          # Used for sleeping sampling thread
 import numpy as np
+import asyncio
 
 
 class DAQ:
-    def __init__(self, daq_type="nidaq",
+    def __init__(self, sem, daq_type="nidaq",
                  sample_rate=44100, sample_size=4096,
                  # NI-DAQ specific
-                 dev_string="Dev1/ai0:7",
-                 sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS):
+                 dev_string="Dev1/ai0:7", fake_data=False,
+                 sample_mode=nidaqmx.constants.AcquisitionType.FINITE):
         """
         Creates sampling task on DAQ and opens I & Q channels for the four
         radars
@@ -35,6 +37,10 @@ class DAQ:
         self.sample_rate = sample_rate
         self.sample_size = sample_size
         self.daq_type = daq_type
+        self.fake_data = fake_data
+
+        # Semaphore
+        self.sem = sem
 
         # Device specific arguments
         if daq_type == "nidaq":
@@ -48,29 +54,28 @@ class DAQ:
                 self.num_channels = int(self.dev_string[-1]) + 1
 
             # Create new sampling task
-            try:
-                # Try to create sampling task
-                self.task = nidaqmx.Task()
-                # List attached devices for debug and convenience
-                print("NI-DAQ Devices:" + self.task.devices)
+            if not fake_data:
+                try:
+                    # Try to create sampling task
+                    self.task = nidaqmx.Task()
+                    # List attached devices for debug and convenience
+                    print("NI-DAQ Devices: ", self.task.devices)
 
-                self.task.ai_channels.add_ai_voltage_chan(dev_string)
+                    self.task.ai_channels.add_ai_voltage_chan(dev_string)
 
-                self.task.timing.cfg_samp_clk_timing(
-                    sample_rate, sample_mode=sample_mode,
-                    samps_per_chan=sample_size)
-
-                self.fake_data = False
-
-            except nidaqmx._lib.DaqNotFoundError:
-                # On failure (ex. on mac/linux) generate random data for
-                # development purposes
-                # TODO: switch to PyDAQmx for mac/linux
-                # TODO: is there any reason to keep nidaqmx for windows?
-                # TODO: try performance comparison
-                self.fake_data = True
-                print("Warning: Using fake data as 'nidaqmx' is not supported "
-                      "on this platform.")
+                    self.task.timing.cfg_samp_clk_timing(
+                        sample_rate, sample_mode=sample_mode,
+                        samps_per_chan=sample_size)
+                    self.in_stream = nidaqmx.stream_readers.AnalogMultiChannelReader(self.task.in_stream)
+                except nidaqmx._lib.DaqNotFoundError:
+                    # On failure (ex. on mac/linux) generate random data for
+                    # development purposes
+                    # TODO: switch to PyDAQmx for mac/linux
+                    # TODO: is there any reason to keep nidaqmx for windows?
+                    # TODO: try performance comparison
+                    self.fake_data = True
+                    print("Warning: Using fake data as 'nidaqmx' is not supported "
+                          "on this platform.")
 
         elif daq_type == "pyaudio":
             pass  # TODO insert pyaudio support here
@@ -90,8 +95,6 @@ class DAQ:
         sleep_time = self.sample_size / self.sample_rate
         while self.running:
             self.get_samples()
-            print("daq updated...")
-            print("daq.running: ", self.running)
             sleep(sleep_time)
         print("Sampling thread stopped.")
 
@@ -105,8 +108,20 @@ class DAQ:
         if self.fake_data:
             self.data = np.random.randn(self.num_channels, self.sample_size)
         else:
-            self.data = self.task.read(
-                number_of_samples_per_channel=self.sample_size)
+            # self.data = self.task.in_stream.read(
+            #     number_of_samples_per_channel=self.sample_size)
+            try:
+                # semaphore will be incrimented at the end.  This can cause
+                # missed samples
+                # self.sem.acquire()
+                bytes_read = self.in_stream.read_many_sample(self.data, number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE, timeout=1.0)
+                if bytes_read == self.sample_size:
+                    try:
+                        self.sem.release()
+                    except ValueError:
+                        print("DAQ thread is running faster than main thread.")
+            except nidaqmx.errors.DaqError:
+                print("DAQ exception caught: Sampling too fast.")
 
     def close(self, signal, frame):
         if self.daq_type == "nidaq" and self.fake_data is False:

@@ -6,37 +6,46 @@ import DAQ
 import signal
 import sys
 import threading
+import asyncio
 from radar_widget import RadarWidget
 
 # === CONSTANTS ===============================================================
 DAQ_SAMPLE_SIZE = 4096   # Hardware max = 4096
-DAQ_SAMPLE_RATE = 50000  # Hz
-FFT_SIZE = 256
-FFT_OVERLAP = 128
+DAQ_SAMPLE_RATE = 30000  # Hz
+FFT_SIZE = 4096
 
 
 if __name__ == '__main__':
 
-    # list used to keep track of all running threaded objects to stop
-    threaded_object_list = []
-
+    # Create application context
     app = QtGui.QApplication([])
-    daq = DAQ.DAQ(sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE)
+
+    # Create semaphore for controlling access to numpy data buffer for r/w
+    sem = asyncio.BoundedSemaphore()
+    # Decriments semaphore to zero. Will not draw until data is received.
+    sem.acquire()
+
+    # Instantiate DAQ object
+    daq = DAQ.DAQ(sem=sem, sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE, fake_data=False)
+
+    # Instantiate RadarWidget objects
+    rw1 = RadarWidget(sem, 100, FFT_SIZE, daq, 0)
+    rw2 = RadarWidget(sem, 100, FFT_SIZE, daq, 1)
+    rw3 = RadarWidget(sem, 100, FFT_SIZE, daq, 2)
+    rw4 = RadarWidget(sem, 100, FFT_SIZE, daq, 3)
 
     # Set up signal handler for ctrl-c
-    def signal_handler(signal, frame):
+    def signal_handler(signal=0, frame=0):
             print('Program exiting...')
             daq.running = False
             sys.exit(0)
     signal.signal(signal.SIGINT, signal_handler)
 
+    # Create layout
     win = pg.LayoutWidget()
     win.setWindowTitle('Quad-Radar')
 
-    rw1 = RadarWidget(100, FFT_SIZE, daq, 0)
-    rw2 = RadarWidget(100, FFT_SIZE, daq, 1)
-    rw3 = RadarWidget(100, FFT_SIZE, daq, 2)
-    rw4 = RadarWidget(100, FFT_SIZE, daq, 3)
+    # Add elements to layout
     win.addWidget(rw1)
     win.addWidget(rw2)
     win.nextRow()
@@ -57,10 +66,14 @@ if __name__ == '__main__':
         rw2.update()
         rw3.update()
         rw4.update()
-    sample_period = (daq.sample_size/daq.sample_rate) * 1000
+    #sample_period = (daq.sample_size/daq.sample_rate) * 100
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(update_gui)
-    timer.start(sample_period)
+    timer.start(0)
+
+    # Set up exit handler
+    #app = QApplication(sys.argv)
+    app.aboutToQuit.connect(signal_handler)
 
     # Run Qt program
     app.exec_()
