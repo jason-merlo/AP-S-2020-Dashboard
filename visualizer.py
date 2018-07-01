@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui
+from pyqtgraph.Qt import QtGui, QtCore
 # import numpy as np
 import DAQ
 import signal
 import sys
 import threading
 import time
+import traceback
+import h5py
 from radar_widget import RadarWidget
 
 # === CONSTANTS ===============================================================
 DAQ_SAMPLE_SIZE = 4096   # Hardware max = 4096
 DAQ_SAMPLE_RATE = 31000  # Hz
-FFT_SIZE = DAQ_SAMPLE_SIZE
+FFT_SIZE = DAQ_SAMPLE_SIZE * 16
 
-class QuadGraph(pg.LayoutWidget):
-    pass
-
-class DataWindow(pg.LayoutWidget):
+class GraphPanel(pg.LayoutWidget):
     def __init__(self, daq):
         pg.LayoutWidget.__init__(self)
 
@@ -30,44 +29,100 @@ class DataWindow(pg.LayoutWidget):
         self.rw3 = RadarWidget(100, FFT_SIZE, self.daq, 2)
         self.rw4 = RadarWidget(100, FFT_SIZE, self.daq, 3)
 
-        # Create layout
-        self.setWindowTitle('Quad-Radar')
-
-        # Add button
-        button = QtGui.QPushButton('Test')
-        button.clicked.connect(button_handler)
-        self.addWidget(button, rowspan=2, colspan=1)
-        self.nextCol()
-
         # Add elements to layout
         self.addWidget(self.rw1)
         self.addWidget(self.rw2)
         self.nextRow()
-        self.nextCol()
-
-        self.nextCol()
         self.addWidget(self.rw3)
         self.addWidget(self.rw4)
 
+        # Remove extra margins around plot widgets
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def update(self):
+        self.rw1.update()
+        self.rw2.update()
+        self.rw3.update()
+        self.rw4.update()
+
+    def reset(self):
+        self.rw1.reset()
+        self.rw2.reset()
+        self.rw3.reset()
+        self.rw4.reset()
+
+
+class ControlPanel(pg.LayoutWidget):
+    def __init__(self, daq, graph_panel):
+        pg.LayoutWidget.__init__(self)
+
+        # Copy member objects
+        self.daq = daq
+        self.graph_panel = graph_panel
+
+        # Add buttons
+        self.pause_button = QtGui.QPushButton('Start/Stop')
+        self.pause_button.clicked.connect(self.pause_button_handler)
+        self.reset_button = QtGui.QPushButton('Clear Data')
+        self.reset_button.clicked.connect(self.reset_button_handler)
+
+        # Add spacer item to shift all buttons to top of screen
+        self.verticalSpacer = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+
+        # Add widgets to layout
+        self.addWidget(self.pause_button)
+        self.nextRow()
+        self.addWidget(self.reset_button)
+        self.layout.addItem(self.verticalSpacer)
+
+        # Align widgets to top instead of center
+        self.layout.setAlignment(self.pause_button, QtCore.Qt.AlignTop)
+        self.layout.setAlignment(self.reset_button, QtCore.Qt.AlignTop)
+
+        # Remove extra margins around button widgets
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def pause_button_handler(self):
+        if self.daq.pause:
+            self.daq.pause = False
+            print("DAQ running.")
+        else:
+            self.daq.pause = True
+            print("DAQ paused.")
+
+    def reset_button_handler(self):
+        self.graph_panel.reset()
+
+
+class DataWindow(pg.LayoutWidget):
+    def __init__(self, daq):
+        pg.LayoutWidget.__init__(self)
+
+        # Copy member objects
+        self.daq = daq
+
+        # Create layout
+        self.setWindowTitle('Radar Tracking Visualizer')
+
+        # Add panels to data window
+        self.graph_panel = GraphPanel(self.daq)
+        self.control_panel = ControlPanel(self.daq, self.graph_panel)
+
+        # Add GUI items to window layout
+        self.addWidget(self.control_panel)
+        self.nextCol()
+        self.addWidget(self.graph_panel)
+
     # Set gui update timer
     def update_gui(self):
+        # Only update if new data is available
         if self.daq.data_available.is_set():
-            self.rw1.update()
-            self.rw2.update()
-            self.rw3.update()
-            self.rw4.update()
+            self.graph_panel.update()
             # Clear event once GUI update ends
             self.daq.data_available.clear()
-            print("GUI update ran...")
-        else:
-            # sleep 1/2 of a DAQ update cycle
-            print("sleeping..........")
-            time.sleep((DAQ_SAMPLE_SIZE / DAQ_SAMPLE_RATE) * 0.5)
 
 
-def button_handler():
-    print("Button Clicked!")
-
+# === Main Function ===========================================================
 if __name__ == '__main__':
 
     # --- DAQ Setup -----------------------------------------------------------
@@ -97,13 +152,19 @@ if __name__ == '__main__':
     # --------------------------- #
 
     # Instantiate and display data-viewing window
-    data_win = DataWindow(daq)
-    data_win.show()
+    try:
+        data_win = DataWindow(daq)
+        data_win.show()
+    except:
+        # Catch all errors and exit for dev purposes
+        print (traceback.format_exc())
+        signal_handler()
 
     # Set data-viewing window update timer
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(data_win.update_gui)
-    timer.start(0)
+    # Only update 2x as fast as new data arrives
+    timer.start(daq.sample_size / daq.sample_rate * 500)  # in ms
 
     # ------ Run Qt program ------ #
     sys.exit(app.exec_())

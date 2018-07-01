@@ -38,6 +38,7 @@ class DAQ:
         self.sample_size = sample_size
         self.daq_type = daq_type
         self.fake_data = fake_data
+        self.pause = False  # Start running by default
 
         # Create sevent for controlling draw events only when there is new datat
         self.data_available = threading.Event()
@@ -96,7 +97,10 @@ class DAQ:
         """
         sleep_time = self.sample_size / self.sample_rate
         while self.running:
-            self.get_samples()
+            if self.pause:
+                time.sleep(0.1)  # sleep 100 ms
+            else:
+                self.get_samples()
         print("Sampling thread stopped.")
 
     def get_samples(self):
