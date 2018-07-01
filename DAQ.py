@@ -6,17 +6,15 @@ Dependencies: nidaqmx, random, threading, time
 """
 try:
     import nidaqmx              # Used for NI-DAQ hardware
-    from nidaqmx import stream_readers
 except ImportError:
     print('Warning: nidaqmx module not imported')
 from threading import Thread    # Used for threading sampling function
 from time import sleep          # Used for sleeping sampling thread
 import numpy as np
-import asyncio
 
 
 class DAQ:
-    def __init__(self, sem, daq_type="nidaq",
+    def __init__(self, event, daq_type="nidaq",
                  sample_rate=44100, sample_size=4096,
                  # NI-DAQ specific
                  dev_string="Dev1/ai0:7", fake_data=False,
@@ -39,8 +37,8 @@ class DAQ:
         self.daq_type = daq_type
         self.fake_data = fake_data
 
-        # Semaphore
-        self.sem = sem
+        # Update thread synchronization event
+        self.event = event
 
         # Device specific arguments
         if daq_type == "nidaq":
@@ -105,23 +103,18 @@ class DAQ:
         arguments:
         task -- nidaqmx task object, returned from open_task_channels()
         """
+        print("DAQ updated...")
         if self.fake_data:
             self.data = np.random.randn(self.num_channels, self.sample_size)
         else:
             # self.data = self.task.in_stream.read(
             #     number_of_samples_per_channel=self.sample_size)
             try:
-                # semaphore will be incrimented at the end.  This can cause
-                # missed samples
-                # self.sem.acquire()
-                bytes_read = self.in_stream.read_many_sample(self.data, number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE, timeout=1.0)
-                if bytes_read == self.sample_size:
-                    try:
-                        self.sem.release()
-                    except ValueError:
-                        print("DAQ thread is running faster than main thread.")
+                self.in_stream.read_many_sample(self.data, number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE, timeout=1.0)
             except nidaqmx.errors.DaqError:
                 print("DAQ exception caught: Sampling too fast.")
+        # Set the update event to True once data is read in
+        self.event.set()
 
     def close(self, signal, frame):
         if self.daq_type == "nidaq" and self.fake_data is False:
