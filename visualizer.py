@@ -11,53 +11,68 @@ from radar_widget import RadarWidget
 
 # === CONSTANTS ===============================================================
 DAQ_SAMPLE_SIZE = 4096   # Hardware max = 4096
-DAQ_SAMPLE_RATE = 30000  # Hz
-FFT_SIZE = 4096
+DAQ_SAMPLE_RATE = 31000  # Hz
+FFT_SIZE = DAQ_SAMPLE_SIZE
 
+class QuadGraph(pg.LayoutWidget):
+    pass
+
+class DataWindow(pg.LayoutWidget):
+    def __init__(self, daq):
+        pg.LayoutWidget.__init__(self)
+
+        # Copy member objects
+        self.daq = daq
+
+        # Instantiate RadarWidget objects
+        self.rw1 = RadarWidget(100, FFT_SIZE, self.daq, 0)
+        self.rw2 = RadarWidget(100, FFT_SIZE, self.daq, 1)
+        self.rw3 = RadarWidget(100, FFT_SIZE, self.daq, 2)
+        self.rw4 = RadarWidget(100, FFT_SIZE, self.daq, 3)
+
+        # Create layout
+        self.setWindowTitle('Quad-Radar')
+
+        # Add button
+        button = QtGui.QPushButton('Test')
+        button.clicked.connect(button_handler)
+        self.addWidget(button, rowspan=2, colspan=1)
+        self.nextCol()
+
+        # Add elements to layout
+        self.addWidget(self.rw1)
+        self.addWidget(self.rw2)
+        self.nextRow()
+        self.nextCol()
+
+        self.nextCol()
+        self.addWidget(self.rw3)
+        self.addWidget(self.rw4)
+
+    # Set gui update timer
+    def update_gui(self):
+        if self.daq.data_available.is_set():
+            self.rw1.update()
+            self.rw2.update()
+            self.rw3.update()
+            self.rw4.update()
+            # Clear event once GUI update ends
+            self.daq.data_available.clear()
+            print("GUI update ran...")
+        else:
+            # sleep 1/2 of a DAQ update cycle
+            print("sleeping..........")
+            time.sleep((DAQ_SAMPLE_SIZE / DAQ_SAMPLE_RATE) * 0.5)
+
+
+def button_handler():
+    print("Button Clicked!")
 
 if __name__ == '__main__':
 
-    # Create application context
-    app = QtGui.QApplication([])
-
-    # Create sevent for controlling draw events only when there is new data
-    update_event = threading.Event()
-
+    # --- DAQ Setup -----------------------------------------------------------
     # Instantiate DAQ object
-    daq = DAQ.DAQ(event=update_event, sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE, fake_data=False)
-
-    # Calculate DAQ sample period
-    sample_period = DAQ_SAMPLE_SIZE / DAQ_SAMPLE_RATE
-
-    # Instantiate RadarWidget objects
-    rw1 = RadarWidget(100, FFT_SIZE, daq, 0)
-    rw2 = RadarWidget(100, FFT_SIZE, daq, 1)
-    rw3 = RadarWidget(100, FFT_SIZE, daq, 2)
-    rw4 = RadarWidget(100, FFT_SIZE, daq, 3)
-
-    # Set up signal handler for ctrl-c
-    def signal_handler(signal=0, frame=0):
-            print('Program exiting...')
-            daq.running = False
-            sys.exit(0)
-    signal.signal(signal.SIGINT, signal_handler)
-
-    # Set up exit handler
-    # app = QApplication(sys.argv)
-    app.aboutToQuit.connect(signal_handler)
-
-    # Create layout
-    win = pg.LayoutWidget()
-    win.setWindowTitle('Quad-Radar')
-
-    # Add elements to layout
-    win.addWidget(rw1)
-    win.addWidget(rw2)
-    win.nextRow()
-    win.addWidget(rw3)
-    win.addWidget(rw4)
-
-    win.show()
+    daq = DAQ.DAQ(sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE, fake_data=False)
 
     # Create sampling and drawing threads
     daq_thread = threading.Thread(target=daq.get_samples)
@@ -65,28 +80,31 @@ if __name__ == '__main__':
     # Spawn threads
     daq_thread.start()
 
-    # Set gui update timer
-    def update_gui():
-        if update_event.is_set():
-            rw1.update()
-            rw2.update()
-            rw3.update()
-            rw4.update()
-            # Clear event once GUI update ends
-            update_event.clear()
-            print("GUI update ran...")
-        else:
-            # sleep 1/2 of a DAQ update cycle
-            print("sleeping..........")
-            time.sleep(sample_period * 0.5)
+    # --- Application Setup ---------------------------------------------------
+    # Create application context
+    app = QtGui.QApplication([])
 
-    # sample_period = (daq.sample_size/daq.sample_rate) * 100
+    # ------ Exit handlers ------ #
+    def signal_handler(signal=0, frame=0):
+            print('Program exiting...')
+            daq.running = False
+            daq_thread.join()
+            sys.exit(0)
+    # ctrl-c handler
+    signal.signal(signal.SIGINT, signal_handler)
+    # Window close handler
+    app.aboutToQuit.connect(signal_handler)
+    # --------------------------- #
+
+    # Instantiate and display data-viewing window
+    data_win = DataWindow(daq)
+    data_win.show()
+
+    # Set data-viewing window update timer
     timer = pg.QtCore.QTimer()
-    timer.timeout.connect(update_gui)
+    timer.timeout.connect(data_win.update_gui)
     timer.start(0)
 
-    # Run Qt program
-    app.exec_()
-
-    # will be called on ctrl-c or exit
-    daq_thread.join()
+    # ------ Run Qt program ------ #
+    sys.exit(app.exec_())
+    # ---------------------------- #

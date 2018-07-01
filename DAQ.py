@@ -6,15 +6,17 @@ Dependencies: nidaqmx, random, threading, time
 """
 try:
     import nidaqmx              # Used for NI-DAQ hardware
+    from nidaqmx import stream_readers
 except ImportError:
     print('Warning: nidaqmx module not imported')
-from threading import Thread    # Used for threading sampling function
+import threading                # Used for creating thread and sync events
+import time                     # Used for tracking update fps
 from time import sleep          # Used for sleeping sampling thread
 import numpy as np
 
 
 class DAQ:
-    def __init__(self, event, daq_type="nidaq",
+    def __init__(self, daq_type="nidaq",
                  sample_rate=44100, sample_size=4096,
                  # NI-DAQ specific
                  dev_string="Dev1/ai0:7", fake_data=False,
@@ -37,8 +39,8 @@ class DAQ:
         self.daq_type = daq_type
         self.fake_data = fake_data
 
-        # Update thread synchronization event
-        self.event = event
+        # Create sevent for controlling draw events only when there is new datat
+        self.data_available = threading.Event()
 
         # Device specific arguments
         if daq_type == "nidaq":
@@ -83,8 +85,10 @@ class DAQ:
 
         # Spawn sampling thread
         self.running = True
-        self.t_sampling = Thread(target=self.sample_loop)
+        self.t_sampling = threading.Thread(target=self.sample_loop)
         self.t_sampling.start()
+
+        self.last_time = 0
 
     def sample_loop(self):
         """
@@ -93,7 +97,6 @@ class DAQ:
         sleep_time = self.sample_size / self.sample_rate
         while self.running:
             self.get_samples()
-            sleep(sleep_time)
         print("Sampling thread stopped.")
 
     def get_samples(self):
@@ -104,8 +107,10 @@ class DAQ:
         task -- nidaqmx task object, returned from open_task_channels()
         """
         print("DAQ updated...")
+
         if self.fake_data:
             self.data = np.random.randn(self.num_channels, self.sample_size)
+            sleep(sleep_time)
         else:
             # self.data = self.task.in_stream.read(
             #     number_of_samples_per_channel=self.sample_size)
@@ -114,7 +119,7 @@ class DAQ:
             except nidaqmx.errors.DaqError:
                 print("DAQ exception caught: Sampling too fast.")
         # Set the update event to True once data is read in
-        self.event.set()
+        self.data_available.set()
 
     def close(self, signal, frame):
         if self.daq_type == "nidaq" and self.fake_data is False:
