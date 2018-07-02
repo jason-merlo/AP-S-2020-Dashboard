@@ -1,0 +1,16 @@
+Tracker2D Class
+
+Purpose:
+Track objects in 2D space using an array of quasi-monostatic doppler radars.
+
+Description:
+Each radar will keep track of it's peak response velocity and acceleration.
+Least-squares will be used to triangulate the velocity and acceleration of the max frequency response from all radars.
+	* A solution using both acceleration calculated on a per-radar level, and on a fused velocity level will be done
+	* Start using three radars to simplify the solution - baseline measurement
+
+Member Functions:
+__init__()
+	
+
+Member Data:

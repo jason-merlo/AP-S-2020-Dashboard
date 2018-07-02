@@ -6,6 +6,7 @@ Dependencies: nidaqmx, random, threading, time
 """
 try:
     import nidaqmx              # Used for NI-DAQ hardware
+    from nidaqmx import stream_readers
 except ImportError:
     print('Warning: nidaqmx module not imported')
 import threading                # Used for creating thread and sync events
@@ -67,7 +68,7 @@ class DAQ:
                         sample_rate, sample_mode=sample_mode,
                         samps_per_chan=sample_size)
                     self.in_stream = \
-                        nidaqmx.stream_readers.AnalogMultiChannelReader(
+                        stream_readers.AnalogMultiChannelReader(
                             self.task.in_stream)
                 except nidaqmx._lib.DaqNotFoundError:
                     # On failure (ex. on mac/linux) generate random data for
@@ -103,6 +104,10 @@ class DAQ:
                 self.get_samples()
         print("Sampling thread stopped.")
 
+    def start_sampling(self):
+        self.thread = threading.Thread(target=self.get_samples)
+        self.thread.start()
+
     def get_samples(self):
         """
         Reads device sample buffers returning the specified sample size
@@ -129,8 +134,9 @@ class DAQ:
         # Set the update event to True once data is read in
         self.data_available.set()
 
-    def close(self, signal, frame):
+    def close(self):
+        print("Stopping sampling thread...")
         if self.daq_type == "nidaq" and self.fake_data is False:
             self.task.close()  # Close nidaq gracefully
-        print("Stopping sampling thread...")
         self.running = False
+        self.thread.join()
