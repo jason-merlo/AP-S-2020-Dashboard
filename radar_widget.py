@@ -21,8 +21,10 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         self.fft_plot = self.addPlot()
 
         # Calculate reasonable ranges for FFT peak outputs
-        fft_xrange = [fft_size / 2 - fft_size / 25, fft_size / 2 +  fft_size / 25]
-        fft_yrange = [fft_size / 2 - fft_size / 50, fft_size / 2 +  fft_size / 50]
+        fft_xrange = [fft_size / 2 - fft_size /
+                      25, fft_size / 2 + fft_size / 25]
+        fft_yrange = [fft_size / 2 - fft_size /
+                      50, fft_size / 2 + fft_size / 50]
 
         # Set up fmax plot
         self.fmax_plot.setDownsampling(mode='peak')
@@ -37,7 +39,7 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         self.fft_plot.setClipToView(True)
         self.fft_plot.setLogMode(x=False, y=True)  # Log Y-axis of FFT views
         self.fft_plot.setRange(disableAutoRange=True,
-             xRange=fft_xrange, yRange=[-6, 8])
+                               xRange=fft_xrange, yRange=[-6, 8])
         self.fft_plot.setLimits(xMin=0, xMax=fft_size, yMin=-1e8, yMax=1e8)
         self.fft_pw = self.fft_plot.plot()
         self.fft_line = pg.InfiniteLine(angle=90, movable=False)

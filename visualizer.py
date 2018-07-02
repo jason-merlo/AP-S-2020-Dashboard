@@ -16,6 +16,15 @@ DAQ_SAMPLE_SIZE = 4096   # Hardware max = 4096
 DAQ_SAMPLE_RATE = 31000  # Hz
 FFT_SIZE = DAQ_SAMPLE_SIZE * 16
 
+
+# From Michael Leonard on StackOverflow
+class QHLine(QtGui.QFrame):
+    def __init__(self):
+        super(QHLine, self).__init__()
+        self.setFrameShape(QtGui.QFrame.HLine)
+        self.setFrameShadow(QtGui.QFrame.Sunken)
+
+
 class GraphPanel(pg.LayoutWidget):
     def __init__(self, daq, fft_size):
         pg.LayoutWidget.__init__(self)
@@ -56,6 +65,7 @@ class ControlPanel(pg.LayoutWidget):
     '''
     Keeps track of stop/start, reset, load/save datasets, and label controls
     '''
+
     def __init__(self, daq, graph_panel):
         pg.LayoutWidget.__init__(self)
 
@@ -66,18 +76,32 @@ class ControlPanel(pg.LayoutWidget):
         # Add buttons to screen
         self.add_control_buttons()
         self.nextRow()
+        self.layout.addItem(QtGui.QSpacerItem(
+            20, 30))
+        self.nextRow()
+
+        self.add_database_buttons()
+        self.nextRow()
+        self.layout.addItem(QtGui.QSpacerItem(
+            20, 30))
+
+        self.nextRow()
         self.add_dataset_buttons()
         self.nextRow()
         self.add_dataset_list()
-        self.nextRow()
+        # self.nextRow()
         # Add spacer item to shift all buttons to top of screen
-        self.verticalSpacer = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.layout.addItem(self.verticalSpacer)
+        # self.verticalSpacer = QtGui.QSpacerItem(
+        #     0, 0, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        # self.layout.addItem(self.verticalSpacer)
 
         # Remove extra margins around button widgets
         self.layout.setContentsMargins(0, 0, 0, 0)
 
     def add_control_buttons(self):
+        # Add label
+        self.control_label = QtGui.QLabel('DAQ Controls')
+
         # Add buttons
         self.pause_button = QtGui.QPushButton('Start/Stop')
         self.pause_button.clicked.connect(self.pause_button_handler)
@@ -85,6 +109,10 @@ class ControlPanel(pg.LayoutWidget):
         self.reset_button.clicked.connect(self.reset_button_handler)
 
         # Add widgets to layout
+        self.addWidget(self.control_label)
+        self.nextRow()
+        self.addWidget(QHLine())
+        self.nextRow()
         self.addWidget(self.pause_button)
         self.nextRow()
         self.addWidget(self.reset_button)
@@ -93,26 +121,55 @@ class ControlPanel(pg.LayoutWidget):
         self.layout.setAlignment(self.pause_button, QtCore.Qt.AlignTop)
         self.layout.setAlignment(self.reset_button, QtCore.Qt.AlignTop)
 
-    def add_dataset_buttons(self):
-        # Add buttons
-        self.load_dataset_button = QtGui.QPushButton('Load Dataset...')
-        self.load_dataset_button.clicked.connect(self.load_dataset_button_handler)
-        self.save_dataset_button = QtGui.QPushButton('Save Dataset')
-        self.save_dataset_button.clicked.connect(self.save_dataset_button_handler)
-        self.save_dataset_as_button = QtGui.QPushButton('Save Dataset as...')
-        self.save_dataset_as_button.clicked.connect(self.save_dataset_as_button_handler)
+    def add_database_buttons(self):
+        # Add label
+        self.database_label = QtGui.QLabel('Database Control')
+
+        self.load_database_button = QtGui.QPushButton('Load Database...')
+        self.load_database_button.clicked.connect(
+            self.load_database_button_handler)
+        self.save_database_as_button = QtGui.QPushButton('Save Database as...')
+        self.save_database_as_button.clicked.connect(
+            self.save_database_as_button_handler)
 
         # Add widgets to layout
-        self.addWidget(self.load_dataset_button)
+        self.addWidget(self.database_label)
         self.nextRow()
+        self.addWidget(QHLine())
+        self.nextRow()
+
+        self.addWidget(self.load_database_button)
+        self.nextRow()
+        self.addWidget(self.save_database_as_button)
+
+    def add_dataset_buttons(self):
+        # Add label
+        self.dataset_label = QtGui.QLabel('Dataset Control')
+
+        # Add buttons
+        self.save_dataset_button = QtGui.QPushButton('Save Dataset')
+        self.save_dataset_button.clicked.connect(
+            self.save_dataset_button_handler)
+        self.delete_dataset_button = QtGui.QPushButton('Delete Selected Dataset')
+        self.delete_dataset_button.clicked.connect(
+            self.delete_dataset_button_handler)
+
+
+        # Add widgets to layout
+        self.addWidget(self.dataset_label)
+        self.nextRow()
+        self.addWidget(QHLine())
+        self.nextRow()
+
         self.addWidget(self.save_dataset_button)
         self.nextRow()
-        self.addWidget(self.save_dataset_as_button)
+        self.addWidget(self.delete_dataset_button)
 
         # Align widgets to top instead of center
-        self.layout.setAlignment(self.load_dataset_button, QtCore.Qt.AlignTop)
-        self.layout.setAlignment(self.save_dataset_button, QtCore.Qt.AlignTop)
-        self.layout.setAlignment(self.save_dataset_as_button, QtCore.Qt.AlignTop)
+        # self.layout.setAlignment(self.load_database_button, QtCore.Qt.AlignTop)
+        # self.layout.setAlignment(self.save_dataset_button, QtCore.Qt.AlignTop)
+        # self.layout.setAlignment(
+        #     self.save_database_as_button, QtCore.Qt.AlignTop)
 
     def add_dataset_list(self):
         self.dataset_list = QtGui.QListWidget()
@@ -120,19 +177,22 @@ class ControlPanel(pg.LayoutWidget):
         # self.dataset_list.addItem("Item 2");
         # self.dataset_list.addItem("Item 3");
         # self.dataset_list.addItem("Item 4");
-        self.dataset_list.itemClicked.connect(self.load_dataset_button_handler)
+        self.dataset_list.itemClicked.connect(self.load_database_button_handler)
 
         # Add widget to main window
         self.addWidget(self.dataset_list)
 
-    def load_dataset_button_handler(self):
-        print("load datset...")
+    def load_database_button_handler(self):
+        print("load database...")
 
     def save_dataset_button_handler(self):
         print("save dataset")
 
-    def save_dataset_as_button_handler(self):
-        print("save dataset as...")
+    def save_database_as_button_handler(self):
+        print("save database as...")
+
+    def delete_dataset_button_handler(self):
+        print("delete dataset...")
 
     def pause_button_handler(self):
         if self.daq.pause:
@@ -179,7 +239,8 @@ if __name__ == '__main__':
 
     # --- DAQ Setup -----------------------------------------------------------
     # Instantiate DAQ object
-    daq = DAQ.DAQ(sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE, fake_data=False)
+    daq = DAQ.DAQ(sample_rate=DAQ_SAMPLE_RATE,
+                  sample_size=DAQ_SAMPLE_SIZE, fake_data=False)
 
     # Create sampling and drawing threads
     daq_thread = threading.Thread(target=daq.get_samples)
@@ -193,10 +254,10 @@ if __name__ == '__main__':
 
     # ------ Exit handlers ------ #
     def signal_handler(signal=0, frame=0):
-            print('Program exiting...')
-            daq.running = False
-            daq_thread.join()
-            sys.exit(0)
+        print('Program exiting...')
+        daq.running = False
+        daq_thread.join()
+        sys.exit(0)
     # ctrl-c handler
     signal.signal(signal.SIGINT, signal_handler)
     # Window close handler
@@ -209,7 +270,7 @@ if __name__ == '__main__':
         data_win.show()
     except:
         # Catch all errors and exit for dev purposes
-        print (traceback.format_exc())
+        print(traceback.format_exc())
         signal_handler()
 
     # Set data-viewing window update timer
