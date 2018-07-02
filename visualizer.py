@@ -17,17 +17,17 @@ DAQ_SAMPLE_RATE = 31000  # Hz
 FFT_SIZE = DAQ_SAMPLE_SIZE * 16
 
 class GraphPanel(pg.LayoutWidget):
-    def __init__(self, daq):
+    def __init__(self, daq, fft_size):
         pg.LayoutWidget.__init__(self)
 
         # Copy member objects
         self.daq = daq
 
         # Instantiate RadarWidget objects
-        self.rw1 = RadarWidget(100, FFT_SIZE, self.daq, 0)
-        self.rw2 = RadarWidget(100, FFT_SIZE, self.daq, 1)
-        self.rw3 = RadarWidget(100, FFT_SIZE, self.daq, 2)
-        self.rw4 = RadarWidget(100, FFT_SIZE, self.daq, 3)
+        self.rw1 = RadarWidget(100, fft_size, self.daq, 0)
+        self.rw2 = RadarWidget(100, fft_size, self.daq, 1)
+        self.rw3 = RadarWidget(100, fft_size, self.daq, 2)
+        self.rw4 = RadarWidget(100, fft_size, self.daq, 3)
 
         # Add elements to layout
         self.addWidget(self.rw1)
@@ -53,6 +53,9 @@ class GraphPanel(pg.LayoutWidget):
 
 
 class ControlPanel(pg.LayoutWidget):
+    '''
+    Keeps track of stop/start, reset, load/save datasets, and label controls
+    '''
     def __init__(self, daq, graph_panel):
         pg.LayoutWidget.__init__(self)
 
@@ -60,27 +63,76 @@ class ControlPanel(pg.LayoutWidget):
         self.daq = daq
         self.graph_panel = graph_panel
 
+        # Add buttons to screen
+        self.add_control_buttons()
+        self.nextRow()
+        self.add_dataset_buttons()
+        self.nextRow()
+        self.add_dataset_list()
+        self.nextRow()
+        # Add spacer item to shift all buttons to top of screen
+        self.verticalSpacer = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.layout.addItem(self.verticalSpacer)
+
+        # Remove extra margins around button widgets
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def add_control_buttons(self):
         # Add buttons
         self.pause_button = QtGui.QPushButton('Start/Stop')
         self.pause_button.clicked.connect(self.pause_button_handler)
         self.reset_button = QtGui.QPushButton('Clear Data')
         self.reset_button.clicked.connect(self.reset_button_handler)
 
-        # Add spacer item to shift all buttons to top of screen
-        self.verticalSpacer = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-
         # Add widgets to layout
         self.addWidget(self.pause_button)
         self.nextRow()
         self.addWidget(self.reset_button)
-        self.layout.addItem(self.verticalSpacer)
 
         # Align widgets to top instead of center
         self.layout.setAlignment(self.pause_button, QtCore.Qt.AlignTop)
         self.layout.setAlignment(self.reset_button, QtCore.Qt.AlignTop)
 
-        # Remove extra margins around button widgets
-        self.layout.setContentsMargins(0, 0, 0, 0)
+    def add_dataset_buttons(self):
+        # Add buttons
+        self.load_dataset_button = QtGui.QPushButton('Load Dataset...')
+        self.load_dataset_button.clicked.connect(self.load_dataset_button_handler)
+        self.save_dataset_button = QtGui.QPushButton('Save Dataset')
+        self.save_dataset_button.clicked.connect(self.save_dataset_button_handler)
+        self.save_dataset_as_button = QtGui.QPushButton('Save Dataset as...')
+        self.save_dataset_as_button.clicked.connect(self.save_dataset_as_button_handler)
+
+        # Add widgets to layout
+        self.addWidget(self.load_dataset_button)
+        self.nextRow()
+        self.addWidget(self.save_dataset_button)
+        self.nextRow()
+        self.addWidget(self.save_dataset_as_button)
+
+        # Align widgets to top instead of center
+        self.layout.setAlignment(self.load_dataset_button, QtCore.Qt.AlignTop)
+        self.layout.setAlignment(self.save_dataset_button, QtCore.Qt.AlignTop)
+        self.layout.setAlignment(self.save_dataset_as_button, QtCore.Qt.AlignTop)
+
+    def add_dataset_list(self):
+        self.dataset_list = QtGui.QListWidget()
+        # self.dataset_list.addItem("Item 1");
+        # self.dataset_list.addItem("Item 2");
+        # self.dataset_list.addItem("Item 3");
+        # self.dataset_list.addItem("Item 4");
+        self.dataset_list.itemClicked.connect(self.load_dataset_button_handler)
+
+        # Add widget to main window
+        self.addWidget(self.dataset_list)
+
+    def load_dataset_button_handler(self):
+        print("load datset...")
+
+    def save_dataset_button_handler(self):
+        print("save dataset")
+
+    def save_dataset_as_button_handler(self):
+        print("save dataset as...")
 
     def pause_button_handler(self):
         if self.daq.pause:
@@ -95,7 +147,7 @@ class ControlPanel(pg.LayoutWidget):
 
 
 class DataWindow(pg.LayoutWidget):
-    def __init__(self, daq):
+    def __init__(self, daq, fft_size):
         pg.LayoutWidget.__init__(self)
 
         # Copy member objects
@@ -105,7 +157,7 @@ class DataWindow(pg.LayoutWidget):
         self.setWindowTitle('Radar Tracking Visualizer')
 
         # Add panels to data window
-        self.graph_panel = GraphPanel(self.daq)
+        self.graph_panel = GraphPanel(self.daq, fft_size)
         self.control_panel = ControlPanel(self.daq, self.graph_panel)
 
         # Add GUI items to window layout
@@ -153,7 +205,7 @@ if __name__ == '__main__':
 
     # Instantiate and display data-viewing window
     try:
-        data_win = DataWindow(daq)
+        data_win = DataWindow(daq, FFT_SIZE)
         data_win.show()
     except:
         # Catch all errors and exit for dev purposes

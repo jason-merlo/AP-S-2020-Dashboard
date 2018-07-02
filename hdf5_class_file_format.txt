@@ -1,0 +1,10 @@
+/root
+|--/label_0
+|    |--/sample_0
+|    |   |--data(ndarray)
+|    |   +--/config
+|    |       |--sample_rate(uint_32)
+|    |       |--sample_size(uint_16)
+|    |       +--fft_size(uing_32)
+|    |
+:    :

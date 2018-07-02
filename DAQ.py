@@ -110,7 +110,7 @@ class DAQ:
         arguments:
         task -- nidaqmx task object, returned from open_task_channels()
         """
-        print("DAQ updated...")
+        #print("DAQ updated...")
 
         if self.fake_data:
             self.data = np.random.randn(self.num_channels, self.sample_size)
