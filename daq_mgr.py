@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-daq.py
+daq_mgr.py
 Author: Jason Merlo
 
 Dependencies: nidaqmx, random, threading, time
@@ -59,8 +60,6 @@ class DAQ:
                 try:
                     # Try to create sampling task
                     self.task = nidaqmx.Task()
-                    # List attached devices for debug and convenience
-                    print("NI-DAQ Devices: ", self.task.devices)
 
                     self.task.ai_channels.add_ai_voltage_chan(dev_string)
 

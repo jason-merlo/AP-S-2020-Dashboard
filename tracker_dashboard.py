@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+'''
+tracker_dashboard.py
+Main file for quad doppler radar tracking project
+
+Author: Jason Merlo
+Maintainer: Jason Merlo (merlojas@msu.edu)
+last_modified: 7/3/2018
+'''
 # === Window / UI ===
 import pyqtgraph as pg                  # GUI event timer
 import signal                           # Handle ctrl-c
@@ -6,12 +14,12 @@ import sys                              # Exit gracefully
 # === Error Handling ===
 import traceback                        # Handling errors gracefully
 # === Sampling / Hardware ===
-import DAQ                              # DAQ hardware
+import daq_mgr                          # DAQ hardware
 import threading                        # Independant sampling thread
 # === Database ===
 import h5py                             # Database storage
 # === GUI Elements ===
-from DataWindow import DataWindow
+from data_window import DataWindow
 
 # === CONSTANTS ===============================================================
 DAQ_SAMPLE_SIZE = 4096   # Hardware max = 4096
@@ -19,28 +27,41 @@ DAQ_SAMPLE_RATE = 31000  # Hz
 ZERO_PAD_FACTOR = 16
 FFT_SIZE = DAQ_SAMPLE_SIZE * ZERO_PAD_FACTOR
 
-def init_daq():
-    # --- DAQ Setup -----------------------------------------------------------
-    # Instantiate DAQ object
-    daq = DAQ.DAQ(sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE)
-    # Start sampling
-    daq.start_sampling()
 
+def init_daq():
+    '''
+    Creates DAQ object, starts sampling, returns object
+    '''
+    daq = daq_mgr.DAQ(sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE)
+    daq.start_sampling()
     return daq
 
-def signal_handler(signal=0, frame=0):
-    print('Program exiting...')
-    daq.close()
-    sys.exit(0)
 
 def init_signal_handler(app, daq):
+    '''
+    Connects signals for ctrl-c event and window 'X' button event to the
+    signal handler function to gracefully shutdown program
+    '''
     # ctrl-c handler
     signal.signal(signal.SIGINT, signal_handler)
     # Window close handler
     app.aboutToQuit.connect(signal_handler)
 
-# === Main Function ===========================================================
-if __name__ == '__main__':
+
+def signal_handler(signal=0, frame=0):
+    '''
+    Handler function to gracefully shutdown program
+    '''
+    global daq
+
+    print('Program exiting...')
+    daq.close()
+    sys.exit(0)
+
+
+def main():
+    global daq
+
     # Create application context and setup sampler and signal handler
     app = pg.QtGui.QApplication([])
     daq = init_daq()
@@ -63,3 +84,7 @@ if __name__ == '__main__':
 
     # ------ Run Qt program ------ #
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()

@@ -1,4 +1,5 @@
-from pyqtgraph.Qt import QtGui, QtCore  
+# -*- coding: utf-8 -*-
+from pyqtgraph.Qt import QtGui, QtCore
 
 # From Michael Leonard on StackOverflow
 class QHLine(QtGui.QFrame):

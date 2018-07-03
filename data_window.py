@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 # === Window / UI ===
 import pyqtgraph as pg                  # Graph Elements
 from pyqtgraph import QtCore, QtGui     # Qt Elements
 # === GUI Elements ===
-from GuiPanels import GraphPanel, ControlPanel
+from gui_panels import GraphPanel, ControlPanel
+
 
 class DataWindow(pg.LayoutWidget):
     def __init__(self, daq, fft_size):

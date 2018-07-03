@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import pyqtgraph as pg
-import numpy as np
-import time
+import pyqtgraph as pg          # Used for RadarWidget superclass
+import numpy as np              # Used for numerical operations TODO move to new class
+import time                     # Used for FPS calculations
 
 
 class RadarWidget(pg.GraphicsLayoutWidget):

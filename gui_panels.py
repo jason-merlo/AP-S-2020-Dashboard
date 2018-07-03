@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 # === Window / UI ===
 import pyqtgraph as pg                  # Graph Elements
 from pyqtgraph import QtCore, QtGui     # Qt Elements
-from CustomUi import QHLine             # Horizontal dividers
+from custom_ui import QHLine             # Horizontal dividers
 # === GUI Panels ===
-from RadarWidget import RadarWidget
+from radar_widget import RadarWidget
+
 
 class GraphPanel(pg.LayoutWidget):
     def __init__(self, daq, fft_size):
