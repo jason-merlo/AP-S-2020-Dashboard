@@ -8,39 +8,36 @@ from radar_widget import RadarWidget
 
 
 class GraphPanel(pg.LayoutWidget):
-    def __init__(self, daq, fft_size):
+    def __init__(self, daq, radar_array):
         pg.LayoutWidget.__init__(self)
 
         # Copy member objects
         self.daq = daq
+        self.radar_array = radar_array
 
-        # Instantiate RadarWidget objects
-        self.rw1 = RadarWidget(100, fft_size, self.daq, 0)
-        self.rw2 = RadarWidget(100, fft_size, self.daq, 1)
-        self.rw3 = RadarWidget(100, fft_size, self.daq, 2)
-        self.rw4 = RadarWidget(100, fft_size, self.daq, 3)
-
-        # Add elements to layout
-        self.addWidget(self.rw1)
-        self.addWidget(self.rw2)
-        self.nextRow()
-        self.addWidget(self.rw3)
-        self.addWidget(self.rw4)
+        # Instantiate RadarWidget objects and widgets add to GraphPanel
+        self.rw_array = []  # [row, col]
+        for i,row in enumerate(self.radar_array):
+            rw_row = []
+            for j,radar in enumerate(row):
+                w = RadarWidget(self.daq, self.radar_array[i][j], len=100)
+                row.append(w)
+                self.addWidget(row[-1])
+            self.rw_array.append(rw_row)
+            self.nextRow()
 
         # Remove extra margins around plot widgets
         self.layout.setContentsMargins(0, 0, 0, 0)
 
     def update(self):
-        self.rw1.update()
-        self.rw2.update()
-        self.rw3.update()
-        self.rw4.update()
+        for row in rw_array:
+            for rw in row:
+                rw.update()
 
     def reset(self):
-        self.rw1.reset()
-        self.rw2.reset()
-        self.rw3.reset()
-        self.rw4.reset()
+        for row in rw_array:
+            for rw in row:
+                rw.reset()
 
 
 class ControlPanel(pg.LayoutWidget):
@@ -71,11 +68,6 @@ class ControlPanel(pg.LayoutWidget):
         self.add_dataset_buttons()
         self.nextRow()
         self.add_dataset_list()
-        # self.nextRow()
-        # Add spacer item to shift all buttons to top of screen
-        # self.verticalSpacer = QtGui.QSpacerItem(
-        #     0, 0, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        # self.layout.addItem(self.verticalSpacer)
 
         # Remove extra margins around button widgets
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -136,7 +128,6 @@ class ControlPanel(pg.LayoutWidget):
         self.delete_dataset_button.clicked.connect(
             self.delete_dataset_button_handler)
 
-
         # Add widgets to layout
         self.addWidget(self.dataset_label)
         self.nextRow()
@@ -146,12 +137,6 @@ class ControlPanel(pg.LayoutWidget):
         self.addWidget(self.save_dataset_button)
         self.nextRow()
         self.addWidget(self.delete_dataset_button)
-
-        # Align widgets to top instead of center
-        # self.layout.setAlignment(self.load_database_button, QtCore.Qt.AlignTop)
-        # self.layout.setAlignment(self.save_dataset_button, QtCore.Qt.AlignTop)
-        # self.layout.setAlignment(
-        #     self.save_database_as_button, QtCore.Qt.AlignTop)
 
     def add_dataset_list(self):
         self.dataset_list = QtGui.QListWidget()

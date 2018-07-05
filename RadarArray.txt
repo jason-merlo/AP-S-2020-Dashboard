@@ -1,0 +1,15 @@
+RadarArray Class
+
+Purpose:
+Hold radar array timeseries data for direct voltage samples, max frequency, and fft (may aide in future development)
+
+Member Functions:
+__init__()
+compute_ffts()
+
+Member Data:
+fft_size	(int16)
+daq		(<daq_object>)
+data		(<TSData_object>)
+fft_data	(<TSData_object>)
+max_f_data	(<TSData_object>)

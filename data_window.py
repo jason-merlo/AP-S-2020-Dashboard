@@ -7,7 +7,7 @@ from gui_panels import GraphPanel, ControlPanel
 
 
 class DataWindow(pg.LayoutWidget):
-    def __init__(self, daq, fft_size):
+    def __init__(self, daq, radar_array):
         pg.LayoutWidget.__init__(self)
 
         # Copy member objects
@@ -17,7 +17,7 @@ class DataWindow(pg.LayoutWidget):
         self.setWindowTitle('Radar Tracking Visualizer')
 
         # Create panel objects
-        self.graph_panel = GraphPanel(self.daq, fft_size)
+        self.graph_panel = GraphPanel(self.daq, radar_array)
         self.control_panel = ControlPanel(self.daq, self.graph_panel)
 
         # Create splitter widget
@@ -27,10 +27,6 @@ class DataWindow(pg.LayoutWidget):
         h_split.addWidget(self.control_panel)
         h_split.addWidget(self.graph_panel)
 
-        # Add GUI items to window layout
-        # self.addWidget(self.control_panel)
-        # self.nextCol()
-        # self.addWidget(self.graph_panel)
         self.addWidget(h_split)
 
     # Set gui update timer

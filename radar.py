@@ -12,6 +12,7 @@ last_modified: 7/5/2018
 '''
 import numpy as np          # Storing data
 from ts_data import TimeSeries
+import time                     # computing sample time
 
 
 class RadarTypes:
@@ -48,10 +49,11 @@ class Radar:
         self.daq=daq
         self.index=index
         self.fft_size=fft_size
+        self.first_update=True
 
         # initialize data arrays
-        self.data=np.empty(2, self.daq.num_samples, dtype=RadarTypes.complex32)
-        self.fft_data=np.empty(self.fft_size, dtype=RadarTypes.complex32)
+        self.ts_data=TimeSeries(length, shape, dtype=RadarTypes.complex32)
+        self.ts_fft_data=TimeSeries(length, shape, dtype=float)
 
     def compute_fft():
         '''
@@ -65,6 +67,20 @@ class Radar:
         center=int(fft_mag.shape[0] / 2)
         self.fft_data[0:center]=fft_mag[center - 1:-1]
         self.fft_data[center:-1]=fft_mag[0:center - 1]
+
+    def update():
+        if self.first_update:
+            self.init_time = self.daq.time
+        sample_time = self.daq.time - self.init_time
+
+        compute_fft()
+
+        self.ts_data.append(self.daq.data, sample_time)
+        self.ts_fft_data.append(self.fft_data, sample_time)
+
+    def clear():
+        self.ts_data.clear()
+        self.ts_fft_data.clear()
 
 
 class RadarArray:
@@ -86,11 +102,11 @@ class RadarArray:
         ts_fmax_data
             timeseries data containing max frequency points
     '''
-    def __init__(daq, index, fft_size, array_shape):
+    def __init__(daq, array_shape, fft_size=65536):
         # copy arguments into member variables
         self.daq=daq
-        self.index=index
         self.fft_size=fft_size
+        self.initial_update=True
 
         # initial array size 4096 samples
         length=self.daq.sample_size * 4096
@@ -109,10 +125,12 @@ class RadarArray:
                 radar_row.append(Radar(daq, index, fft_size))
             self.radars.append(radar_row)
 
-    def compute_ffts():
-        '''
-        Updates all FFTs in radar array
-        '''
+    def clear():
         for row in self.radars:
             for radar in row:
-                radar.compute_fft()
+                radar.clear()
+
+    def update():
+        for row in self.radars:
+            for radar in row:
+                radar.update()

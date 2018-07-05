@@ -31,6 +31,8 @@ class TimeSeries:
 
         self.data = np.empty(length, frame_shape, dtype=float)
 
+
+
     append(self, data, time):
         '''
         Adds 'data' to the time-series data, doubles array size when full

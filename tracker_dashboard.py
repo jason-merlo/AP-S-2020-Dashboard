@@ -16,6 +16,7 @@ import traceback                        # Handling errors gracefully
 # === Sampling / Hardware ===
 import daq_mgr                          # DAQ hardware
 import threading                        # Independant sampling thread
+import radar_row                        # RadaryArray object
 # === Database ===
 import h5py                             # Database storage
 # === GUI Elements ===
@@ -23,8 +24,8 @@ from data_window import DataWindow
 
 # === CONSTANTS ===============================================================
 DAQ_SAMPLE_SIZE = 4096   # Hardware max = 4096
-DAQ_SAMPLE_RATE = 31000  # Hz
-ZERO_PAD_FACTOR = 16
+DAQ_SAMPLE_RATE = 31250  # Hz - hardware max = 31250
+ZERO_PAD_FACTOR = 16     # FFT_SIZE = 65536
 FFT_SIZE = DAQ_SAMPLE_SIZE * ZERO_PAD_FACTOR
 
 
@@ -67,9 +68,11 @@ def main():
     daq = init_daq()
     init_signal_handler(app, daq)
 
+    radar_array = RadarArray(daq, (2, 2), fft_size=FFT_SIZE)
+
     # Instantiate and display data-viewing window (close gracefully on failure)
     try:
-        data_win = DataWindow(daq, FFT_SIZE)
+        data_win = DataWindow(daq, radar_array)
         data_win.show()
     except:
         # Catch all errors and exit for dev purposes
