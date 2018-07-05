@@ -28,10 +28,10 @@ class TimeSeries:
     '''
 
     __init__(self, length, shape, dtype=float):
-        self.size=length  # Length of initial data buffer (in frames)
-        self.frame_shape=shape  # Shape of single data frame
+        self.size = length  # Length of initial data buffer (in frames)
+        self.frame_shape = shape  # Shape of single data frame
 
-        self.data=np.empty(length, frame_shape, dtype=self.complex32)
+        self.data = np.empty(length, frame_shape, dtype=self.complex32)
 
     append(self, data, time):
         '''
@@ -48,10 +48,17 @@ class TimeSeries:
 
         # Double array size
         if self.head_ptr >= self.data.shape[0]:
-            tmp=self.data
-            self.data=np.empty(self.data.shape[0] * 2, dtype=self.complex32)
-            self.data[:tmp.shape[0]]=tmp
+            tmp = self.data
+            self.data = np.empty(self.data.shape[0] * 2, dtype=self.complex32)
+            self.data[:tmp.shape[0]] = tmp
 
         # Insert data into array
-        left_ptr=self.head_ptr - self.shape[0]
-        self.data[left_ptr:self.iq_data_ptr]=data[:self.size[0]]
+        left_ptr = self.head_ptr - self.shape[0]
+        self.data[left_ptr:self.iq_data_ptr] = data[:self.size[0]]
+
+    clear(self):
+        '''
+        Removes data from array, but does not reduce its size
+        '''
+        self.head_ptr = 0
+        self.data = np.zeros(self.data.size())
