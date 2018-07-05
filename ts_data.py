@@ -7,8 +7,8 @@ Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
 last_modified: 7/3/2018
 '''
-import numpy as np          # Storing data
-
+import numpy as np              # Storing data
+from radar import RadarTypes    # for complex32 type
 
 class TimeSeries:
     '''Time series data class
@@ -23,15 +23,13 @@ class TimeSeries:
             numpy array of timestamps data were taken
         head_ptr
             pointer to head index of time and data arrays
-        complex32
-            numpy type for complex 32-bit data
     '''
 
     __init__(self, length, shape, dtype=float):
         self.size = length  # Length of initial data buffer (in frames)
         self.frame_shape = shape  # Shape of single data frame
 
-        self.data = np.empty(length, frame_shape, dtype=self.complex32)
+        self.data = np.empty(length, frame_shape, dtype=float)
 
     append(self, data, time):
         '''
