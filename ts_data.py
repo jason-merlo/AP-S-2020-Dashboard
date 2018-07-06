@@ -5,10 +5,9 @@ Contains TimeSeries class
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/3/2018
+last_modified: 7/6/2018
 '''
 import numpy as np              # Storing data
-from radar import RadarTypes    # for complex32 type
 
 class TimeSeries:
     '''Time series data class
@@ -25,15 +24,20 @@ class TimeSeries:
             pointer to head index of time and data arrays
     '''
 
-    __init__(self, length, shape, dtype=float):
+    def __init__(self, length, shape, dtype=float):
         self.size = length  # Length of initial data buffer (in frames)
         self.frame_shape = shape  # Shape of single data frame
+        self.dtype = dtype
 
-        self.data = np.empty(length, frame_shape, dtype=float)
+        self.head_ptr = 0
+        self._data = np.empty((self.size,) + self.frame_shape, dtype=dtype)
+        self.time = np.empty((self.size,) + self.frame_shape, dtype=float)
 
+    @property
+    def data(self):
+        return self._data[:self.head_ptr]
 
-
-    append(self, data, time):
+    def append(self, data, time):
         '''
         Adds 'data' to the time-series data, doubles array size when full
 
@@ -43,22 +47,32 @@ class TimeSeries:
             time
                 Time at which the data was collected
         '''
-        # Update the long-term iq_data store buffer
-        self.head_ptr += self.shape[0]
 
         # Double array size
-        if self.head_ptr >= self.data.shape[0]:
-            tmp = self.data
-            self.data = np.empty(self.data.shape[0] * 2, dtype=self.complex32)
-            self.data[:tmp.shape[0]] = tmp
+        if self.head_ptr >= self._data.shape[0] - 1:
+            # expand data
+            tmp = self._data
+            self._data = np.empty(self._data.shape[0] * 2, dtype=self.dtype)
+            self._data[:tmp.shape[0]] = tmp
+            # expand time
+            tmp = self.time
+            self.time = np.empty(self.time.shape[0] * 2, dtype=float)
+            self.time[:tmp.shape[0]] = tmp
 
-        # Insert data into array
-        left_ptr = self.head_ptr - self.shape[0]
-        self.data[left_ptr:self.iq_data_ptr] = data[:self.size[0]]
+        # Update the long-term iq_data store buffer
+        self.head_ptr += 1
 
-    clear(self):
+        # Insert time and data into array
+        # print("_data.shape: ", self._data.shape)
+        # print("data.shape: ", data.shape)
+
+        left_ptr = self.head_ptr - 1
+        self._data[left_ptr:self.head_ptr] = data
+        self.time[left_ptr:self.head_ptr] = time
+
+    def clear(self):
         '''
         Removes data from array, but does not reduce its size
         '''
         self.head_ptr = 0
-        self.data = np.zeros(self.data.size())
+        self._data = np.zeros(self._data.size())

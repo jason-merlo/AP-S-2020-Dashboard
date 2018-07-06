@@ -121,7 +121,7 @@ class DAQ:
             self.data = np.random.randn(
                 self.num_channels, self.sample_size) * 0.001 + \
                 np.random.randn(1) * 0.001 + 0.01
-                self.time = time.time_ns()
+            self.time = time.time_ns()
             sleep(sleep_time)
         else:
             try:
@@ -129,7 +129,7 @@ class DAQ:
                     self.data,
                     number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
                     timeout=1.0)
-                self.time = time.time_ns()
+                self.time = time.time()  # +/- 16 us
             except nidaqmx.errors.DaqError:
                 print("DAQ exception caught: Sampling too fast.")
         # Set the update event to True once data is read in

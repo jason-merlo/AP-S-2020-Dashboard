@@ -16,7 +16,7 @@ import traceback                        # Handling errors gracefully
 # === Sampling / Hardware ===
 import daq_mgr                          # DAQ hardware
 import threading                        # Independant sampling thread
-import radar_row                        # RadaryArray object
+import radar                            # RadaryArray object
 # === Database ===
 import h5py                             # Database storage
 # === GUI Elements ===
@@ -68,7 +68,7 @@ def main():
     daq = init_daq()
     init_signal_handler(app, daq)
 
-    radar_array = RadarArray(daq, (2, 2), fft_size=FFT_SIZE)
+    radar_array = radar.RadarArray(daq, (2, 2), fft_size=FFT_SIZE)
 
     # Instantiate and display data-viewing window (close gracefully on failure)
     try:

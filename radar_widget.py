@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+'''
+radar_widget.py
+Contains RadarWidget class used to draw the max frequency and FFT graphs
+
+Author: Jason Merlo
+Maintainer: Jason Merlo (merlojas@msu.edu)
+last_modified: 7/6/2018
+'''
 import pyqtgraph as pg          # Used for RadarWidget superclass
 import numpy as np              # Used for numerical operations TODO move to new class
 import time                     # Used for FPS calculations
@@ -12,7 +20,6 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         self.daq = daq
         self.radar = radar
         self.fmax_len = fmax_len
-        self.index = index * 2
         self.update_period = daq.sample_size / daq.sample_rate
 
         # Add plots to layout
@@ -38,7 +45,7 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         self.fft_plot.setLogMode(x=False, y=True)  # Log Y-axis of FFT views
         self.fft_plot.setRange(disableAutoRange=True,
                                xRange=fft_xrange, yRange=[-6, 8])
-        self.fft_plot.setLimits(xMin=0, xMax=fft_size, yMin=-1e8, yMax=1e8)
+        self.fft_plot.setLimits(xMin=0, xMax=fft_len, yMin=-1e8, yMax=1e8)
         self.fft_pw = self.fft_plot.plot()
         self.fft_line = pg.InfiniteLine(angle=90, movable=False)
         self.fft_plot.addItem(self.fft_line)
@@ -49,38 +56,16 @@ class RadarWidget(pg.GraphicsLayoutWidget):
 
 
     def update_fmax(self):
-        max_freq_bin = np.argmax(self.radar.ts_fft_data)
-        self.fmax_data[self.fmax_ptr] = max_freq_bin
-        self.fmax_pw.setData(self.fmax_data[:self.fmax_ptr])
-        self.fmax_pw.setPos(-self.fmax_ptr, 0)
+        # Update fmax graph
+        fmax_data = self.radar.ts_fmax_data.data
+        self.fmax_pw.setData(fmax_data)
+        self.fmax_pw.setPos(-self.fmax_len, 0)
 
-        # update FFT line with result of argmax
-        self.fft_line.setValue(max_freq_bin)
-
-    def clear_fmax(self):
-        self.fmax_data = np.full((self.fmax_len,), self.fft_size / 2)
-        self.fmax_ptr = 0
+        # update max FFT line with result of argmax
+        self.fft_line.setValue(fmax_data[-1])
 
     def update_fft(self):
-        fmax_left_ptr = self.iq_data_ptr - self.fft_size
-        if fmax_left_ptr < 0:
-            fmax_left_ptr = 0
-        fft_complex = np.fft.fft(self.new_iq_data)
-        # show only positive data
-        # fft_complex = fft_complex[int(fft_complex.size / 2):-1]
-        fft_mag = np.square(fft_complex.real) + \
-            np.square(fft_complex.imag)
-
-        # Adjust fft so it is biased at the center
-        center = int(fft_mag.shape[0] / 2)
-        self.fft_data[0:center] = fft_mag[center - 1:-1]
-        self.fft_data[center:-1] = fft_mag[0:center - 1]
-
-        self.fft_pw.setData(self.fft_data)
-
-    def clear_fft(self):
-        self.fft_data = np.zeros(self.fft_size)
-        self.fft_pw.setData(self.fft_data)
+        self.fft_pw.setData(self.radar.ts_fft_data.data[-1][0])
 
     def update_fps(self):
         now = time.time()
@@ -94,15 +79,13 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         self.fmax_plot.setTitle('%0.2f fps' % self.fps)
 
     def update(self):
-        self.update_fps()
-        self.update_data()
+        self.radar.update()
         self.update_fft()
         self.update_fmax()
+        self.update_fps()
 
     def reset(self):
-        self.clear_data()
-        self.clear_fft()
-        self.clear_fmax()
+        self.radar.clear()
         # When paused, redraw after reset
         if self.daq.pause:
             self.update()

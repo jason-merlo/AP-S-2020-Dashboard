@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+'''
+radar_widget.py
+Contains GUI panel classes for radar tracker dashboard
+
+Author: Jason Merlo
+Maintainer: Jason Merlo (merlojas@msu.edu)
+last_modified: 7/6/2018
+'''
 # === Window / UI ===
 import pyqtgraph as pg                  # Graph Elements
 from pyqtgraph import QtCore, QtGui     # Qt Elements
@@ -17,12 +25,12 @@ class GraphPanel(pg.LayoutWidget):
 
         # Instantiate RadarWidget objects and widgets add to GraphPanel
         self.rw_array = []  # [row, col]
-        for i,row in enumerate(self.radar_array):
+        for i,row in enumerate(self.radar_array.radars):
             rw_row = []
             for j,radar in enumerate(row):
-                w = RadarWidget(self.daq, self.radar_array[i][j], len=100)
-                row.append(w)
-                self.addWidget(row[-1])
+                w = RadarWidget(self.daq, radar, fmax_len=100)
+                rw_row.append(w)
+                self.addWidget(rw_row[-1])
             self.rw_array.append(rw_row)
             self.nextRow()
 
@@ -30,12 +38,12 @@ class GraphPanel(pg.LayoutWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
 
     def update(self):
-        for row in rw_array:
+        for row in self.rw_array:
             for rw in row:
                 rw.update()
 
     def reset(self):
-        for row in rw_array:
+        for row in self.rw_array:
             for rw in row:
                 rw.reset()
 
