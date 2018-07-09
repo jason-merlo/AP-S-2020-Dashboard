@@ -9,6 +9,7 @@ last_modified: 7/6/2018
 '''
 import numpy as np              # Storing data
 
+
 class TimeSeries:
     '''Time series data class
 
@@ -30,7 +31,8 @@ class TimeSeries:
         self.dtype = dtype
 
         self.head_ptr = 0
-        self._data = np.empty((self.size,) + self.frame_shape, dtype=dtype)
+        self._data = np.empty(
+            (self.size,) + self.frame_shape, dtype=self.dtype)
         self.time = np.empty((self.size,) + self.frame_shape, dtype=float)
 
     @property
@@ -64,15 +66,16 @@ class TimeSeries:
 
         # Insert time and data into array
         # print("_data.shape: ", self._data.shape)
-        # print("data.shape: ", data.shape)
+        # print("head_ptr: ", self.head_ptr)
+        # print("data.shape: ", self.data.shape)
 
-        left_ptr = self.head_ptr - 1
-        self._data[left_ptr:self.head_ptr] = data
-        self.time[left_ptr:self.head_ptr] = time
+        self._data[self.head_ptr-1:self.head_ptr] = data
+        self.time[self.head_ptr-1:self.head_ptr] = time
 
     def clear(self):
         '''
         Removes data from array, but does not reduce its size
         '''
         self.head_ptr = 0
-        self._data = np.zeros(self._data.size())
+        self._data = np.empty((self._data.shape[0],)
+                              + self.frame_shape, dtype=self.dtype)

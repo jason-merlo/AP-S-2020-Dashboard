@@ -3,7 +3,7 @@
 daq_mgr.py
 Author: Jason Merlo
 
-Dependencies: nidaqmx, random, threading, time
+Dependencies: nidaqmx, random, threading, time, numpy
 """
 try:
     import nidaqmx              # Used for NI-DAQ hardware
@@ -121,7 +121,7 @@ class DAQ:
             self.data = np.random.randn(
                 self.num_channels, self.sample_size) * 0.001 + \
                 np.random.randn(1) * 0.001 + 0.01
-            self.time = time.time_ns()
+            self.time = time.time()
             sleep(sleep_time)
         else:
             try:

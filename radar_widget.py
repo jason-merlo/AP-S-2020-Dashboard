@@ -65,7 +65,7 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         self.fft_line.setValue(fmax_data[-1])
 
     def update_fft(self):
-        self.fft_pw.setData(self.radar.ts_fft_data.data[-1][0])
+        self.fft_pw.setData(self.radar.ts_fft_data.data[-1])
 
     def update_fps(self):
         now = time.time()
