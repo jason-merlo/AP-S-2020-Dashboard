@@ -5,7 +5,7 @@ Contains TimeSeries class
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/6/2018
+last_modified: 7/10/2018
 '''
 import numpy as np              # Storing data
 
@@ -52,6 +52,7 @@ class TimeSeries:
 
         # Double array size
         if self.head_ptr >= self._data.shape[0] - 1:
+            print('=========== DATASET DOUBLED ===========')
             # expand data
             tmp = self._data
             self._data = np.empty(self._data.shape[0] * 2, dtype=self.dtype)
@@ -62,15 +63,9 @@ class TimeSeries:
             self.time[:tmp.shape[0]] = tmp
 
         # Update the long-term iq_data store buffer
+        self._data[self.head_ptr] = data
+        self.time[self.head_ptr] = time
         self.head_ptr += 1
-
-        # Insert time and data into array
-        # print("_data.shape: ", self._data.shape)
-        # print("head_ptr: ", self.head_ptr)
-        # print("data.shape: ", self.data.shape)
-
-        self._data[self.head_ptr-1:self.head_ptr] = data
-        self.time[self.head_ptr-1:self.head_ptr] = time
 
     def clear(self):
         '''

@@ -8,11 +8,14 @@ FFT slices, and max frequency.
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/6/2018
+last_modified: 7/10/2018
 '''
 import numpy as np              # Storing data
 from ts_data import TimeSeries  # storing data
 import scipy.constants as spc   # speed of light
+
+# DEBUG:
+import sys
 
 
 class RadarTypes(object):
@@ -24,8 +27,7 @@ class RadarTypes(object):
             32-bit complex data-type to align with the 16-bit samples from
             the nidaqmx - this saves space over the default complex128
     '''
-    complex32 = \
-        np.dtype((np.int32, {'real': (np.int16, 2), 'imag': (np.int16, 2)}))
+    complex32 = np.dtype([('real', np.int16), ('imag', np.int16)])
 
 
 class Radar(object):
@@ -52,36 +54,42 @@ class Radar(object):
         self.first_update = True
         self.f0 = f0
 
+
+        self.bin_size = self.daq.sample_rate / self.fft_size
+        self.center_bin = np.ceil(self.fft_size / 2)
+        self.fmax = 0
+        self.vmax = 0
+
         # initial array size 4096 samples
         length = 4096
         data_shape = (2, self.daq.sample_size)
         fft_shape = (self.fft_size,)
 
         # initialize data arrays
-        self.ts_data = TimeSeries(length, data_shape, dtype=complex)
-        self.ts_fft_data = TimeSeries(length, fft_shape, dtype=float)
-        self.ts_fmax_data = TimeSeries(length, (), dtype=float)
+        self.ts_data = TimeSeries(length, data_shape, dtype=np.complex64)
+        self.ts_vmax_data = TimeSeries(length, (), dtype=np.float32)
+        self.cfft_data = np.empty(fft_size, dtype=np.float32)
 
         # Generate FFT frequency labels
         self.fft_freqs = []
-        center = np.ceil(self.fft_size / 2)
-        bin_size = self.daq.sample_rate / self.daq.sample_size
         for i in range(self.fft_size):
-            freq = (i - center) * bin_size
-            self.fft_freqs.append(freq)
+            self.fft_freqs.append(self.bin_to_freq(i))
 
         # Generate FFT velocity labels
         self.fft_velocities = []
         for i in self.fft_freqs:
-            velocity = self.compute_velocity(i)
+            velocity = self.freq_to_vel(i)
             self.fft_velocities.append(velocity)
 
-    def compute_velocity(self, freq):
+    def freq_to_vel(self, freq):
         '''
         Computes a velocity for the given frequency and the radar f0
         '''
         c = spc.speed_of_light
-        return c * self.f0 / (freq + self.f0) - c
+        return -(c * self.f0 / (freq + self.f0) - c)
+
+    def bin_to_freq(self, bin):
+        return (bin - self.center_bin) * self.bin_size
 
     def compute_cfft(self, data):
         '''
@@ -89,17 +97,17 @@ class Radar(object):
         '''
         # Create complex data from input
         complex_data = data[0] + data[1] * 1j
-        padded_data = np.zeros(self.fft_size, dtype=complex)
+        padded_data = np.zeros(self.fft_size, dtype=np.complex64)
         padded_data[:complex_data.size] = complex_data
         fft_complex = np.fft.fft(padded_data)
         # Display only magnitude
-        fft_mag = np.square(fft_complex.real) + np.square(fft_complex.imag)
+        fft_mag = np.linalg.norm([fft_complex.real, fft_complex.imag], axis=0)
 
         # Adjust fft so DC is at the center
         center = int(fft_mag.shape[0] / 2)
         fft_data = np.empty(fft_mag.shape)
-        fft_data[0:center] = fft_mag[center - 1:-1]
-        fft_data[center:-1] = fft_mag[0:center - 1]
+        fft_data[:center] = fft_mag[center:]
+        fft_data[center:] = fft_mag[:center]
 
         return fft_data
 
@@ -113,18 +121,17 @@ class Radar(object):
         slice = 2 * self.index
         self.ts_data.append(self.daq.data[slice:slice + 2], sample_time)
 
-        # Append samples, FFT, and max frequency
-        cfft = self.compute_cfft(self.ts_data.data[-1])
-        self.ts_fft_data.append(cfft, sample_time)
+        # Calculate complex FFT (may be zero-padded if fft-size > sample_size)
+        self.cfft_data = self.compute_cfft(self.ts_data.data[-1])
 
-        max_freq_bin = np.argmax(self.ts_fft_data.data[-1])
-        self.ts_fmax_data.append(max_freq_bin, sample_time)
-
-        print("max: ", self.ts_fmax_data.data[-1])
+        vmax_bin = np.argmax(self.cfft_data).astype(np.int32)
+        self.fmax = self.bin_to_freq(vmax_bin)
+        self.vmax = self.freq_to_vel(self.fmax)
+        self.ts_vmax_data.append(self.vmax, sample_time)
 
     def clear(self):
         self.ts_data.clear()
-        self.ts_fft_data.clear()
+        self.ts_vmax_data.clear()
 
 
 class RadarArray(object):
@@ -139,12 +146,6 @@ class RadarArray(object):
             tuple containing dimensions of radar array
         fft_size
             size of FFT to compute
-        ts_data
-            timeseries data containing direct voltage measurements
-        ts_fft_data
-            timeseries data containing fft slices
-        ts_fmax_data
-            timeseries data containing max frequency points
     '''
 
     def __init__(self, daq, array_shape, fft_size=65536):
@@ -171,4 +172,5 @@ class RadarArray(object):
     def update(self):
         for row in self.radars:
             for radar in row:
-                radar.update()
+                pass
+                #radar.update()

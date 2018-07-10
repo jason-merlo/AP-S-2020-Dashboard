@@ -5,7 +5,7 @@ Contains GUI panel classes for radar tracker dashboard
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/6/2018
+last_modified: 7/10/2018
 '''
 # === Window / UI ===
 import pyqtgraph as pg                  # Graph Elements
@@ -28,7 +28,7 @@ class GraphPanel(pg.LayoutWidget):
         for i,row in enumerate(self.radar_array.radars):
             rw_row = []
             for j,radar in enumerate(row):
-                w = RadarWidget(self.daq, radar, fmax_len=100)
+                w = RadarWidget(self.daq, radar, vmax_len=100)
                 rw_row.append(w)
                 self.addWidget(rw_row[-1])
             self.rw_array.append(rw_row)
