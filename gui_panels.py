@@ -13,6 +13,28 @@ from pyqtgraph import QtCore, QtGui     # Qt Elements
 from custom_ui import QHLine             # Horizontal dividers
 # === GUI Panels ===
 from radar_widget import RadarWidget
+from tracker2d_widget import Tracker2DWidget
+
+
+class Tracker2DPanel(pg.LayoutWidget):
+    def __init__(self, tracker):
+        pg.LayoutWidget.__init__(self)
+
+        # Copy member objects
+        self.tracker = tracker
+
+        self.tracker2d_widget = Tracker2DWidget(tracker, trail=10)
+
+        self.addWidget(self.tracker2d_widget)
+
+        # Remove extra margins around plot
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def update(self):
+        self.tracker2d_widget.update()
+
+    def reset(self):
+        self.tracker2d_widget.reset()
 
 
 class GraphPanel(pg.LayoutWidget):
@@ -25,9 +47,9 @@ class GraphPanel(pg.LayoutWidget):
 
         # Instantiate RadarWidget objects and widgets add to GraphPanel
         self.rw_array = []  # [row, col]
-        for i,row in enumerate(self.radar_array.radars):
+        for i, row in enumerate(self.radar_array.radars):
             rw_row = []
-            for j,radar in enumerate(row):
+            for j, radar in enumerate(row):
                 w = RadarWidget(self.daq, radar, vmax_len=100)
                 rw_row.append(w)
                 self.addWidget(rw_row[-1])
@@ -132,7 +154,8 @@ class ControlPanel(pg.LayoutWidget):
         self.save_dataset_button = QtGui.QPushButton('Save Dataset')
         self.save_dataset_button.clicked.connect(
             self.save_dataset_button_handler)
-        self.delete_dataset_button = QtGui.QPushButton('Delete Selected Dataset')
+        self.delete_dataset_button = QtGui.QPushButton(
+            'Delete Selected Dataset')
         self.delete_dataset_button.clicked.connect(
             self.delete_dataset_button_handler)
 
@@ -152,7 +175,8 @@ class ControlPanel(pg.LayoutWidget):
         # self.dataset_list.addItem("Item 2");
         # self.dataset_list.addItem("Item 3");
         # self.dataset_list.addItem("Item 4");
-        self.dataset_list.itemClicked.connect(self.load_database_button_handler)
+        self.dataset_list.itemClicked.connect(
+            self.load_database_button_handler)
 
         # Add widget to main window
         self.addWidget(self.dataset_list)

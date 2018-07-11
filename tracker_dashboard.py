@@ -17,6 +17,8 @@ import traceback                        # Handling errors gracefully
 import daq_mgr                          # DAQ hardware
 import threading                        # Independant sampling thread
 import radar                            # RadaryArray object
+# === Tracking ===
+import tracker                          # 2D tracker object
 # === Database ===
 import h5py                             # Database storage
 # === GUI Elements ===
@@ -68,11 +70,14 @@ def main():
     daq = init_daq()
     init_signal_handler(app, daq)
 
+    # Create array and trackers
     radar_array = radar.RadarArray(daq, (2, 2), fft_size=FFT_SIZE)
+    tracker2d = tracker.Tracker2D()
 
     # Instantiate and display data-viewing window (close gracefully on failure)
     try:
-        data_win = DataWindow(daq, radar_array)
+        data_win = DataWindow(daq, radar_array, tracker2d)
+        data_win.setGeometry(160, 140, 1400, 800)
         data_win.show()
     except:
         # Catch all errors and exit for dev purposes

@@ -8,7 +8,7 @@ Maintainer: Jason Merlo (merlojas@msu.edu)
 last_modified: 7/10/2018
 '''
 import pyqtgraph as pg          # Used for RadarWidget superclass
-import numpy as np              # Used for numerical operations TODO move to new class
+import numpy as np              # Used for numerical operations
 import time                     # Used for FPS calculations
 
 

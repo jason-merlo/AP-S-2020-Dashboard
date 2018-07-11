@@ -170,7 +170,7 @@ class RadarArray(object):
                 radar.clear()
 
     def update(self):
+        # Unused function - update is taken care of by widget
         for row in self.radars:
             for radar in row:
-                pass
-                #radar.update()
+                radar.update()
