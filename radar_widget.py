@@ -91,12 +91,14 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         else:
             s = np.clip(dt * 3., 0, 1)
             self.fps = self.fps * (1 - s) + (1.0 / dt) * s
-        self.vmax_plot.setTitle('%0.2f fps' % self.fps)
+        # self.vmax_plot.setTitle('%0.2f fps' % self.fps)
+        print('%0.2f fps' % self.fps)
 
     def update(self):
         self.radar.update()
         self.update_fft()
         self.update_vmax()
+        self.update_fps()
 
     def reset(self):
         self.radar.clear()

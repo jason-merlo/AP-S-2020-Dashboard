@@ -27,7 +27,7 @@ from data_window import DataWindow
 # === CONSTANTS ===============================================================
 DAQ_SAMPLE_SIZE = 4096   # Hardware max = 4096
 DAQ_SAMPLE_RATE = 31250  # Hz - hardware max = 31250
-ZERO_PAD_FACTOR = 16     # FFT_SIZE = 65536
+ZERO_PAD_FACTOR = 24     # FFT_SIZE = 65536
 FFT_SIZE = DAQ_SAMPLE_SIZE * ZERO_PAD_FACTOR
 
 
@@ -71,8 +71,12 @@ def main():
     init_signal_handler(app, daq)
 
     # Create array and trackers
-    radar_array = radar.RadarArray(daq, (2, 2), fft_size=FFT_SIZE)
-    tracker2d = tracker.Tracker2D()
+    array_shape = (2, 2)
+    array_dims = (((0,     0),  (0,     105.6)),
+                  ((105.6, 0),  (105.6, 105.6)))  # mm
+    radar_array = radar.RadarArray(
+        daq, array_shape, array_dims, fft_size=FFT_SIZE)
+    tracker2d = tracker.Tracker2D(radar_array)
 
     # Instantiate and display data-viewing window (close gracefully on failure)
     try:

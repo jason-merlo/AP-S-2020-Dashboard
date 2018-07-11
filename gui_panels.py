@@ -13,7 +13,7 @@ from pyqtgraph import QtCore, QtGui     # Qt Elements
 from custom_ui import QHLine             # Horizontal dividers
 # === GUI Panels ===
 from radar_widget import RadarWidget
-from tracker2d_widget import Tracker2DWidget
+from tracker_widget import Tracker2DWidget
 
 
 class Tracker2DPanel(pg.LayoutWidget):

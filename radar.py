@@ -54,7 +54,6 @@ class Radar(object):
         self.first_update = True
         self.f0 = f0
 
-
         self.bin_size = self.daq.sample_rate / self.fft_size
         self.center_bin = np.ceil(self.fft_size / 2)
         self.fmax = 0
@@ -148,11 +147,31 @@ class RadarArray(object):
             size of FFT to compute
     '''
 
-    def __init__(self, daq, array_shape, fft_size=65536):
-        # super(Radar, self).__init__()
+    def __init__(self, daq, array_shape, array_dims, array_indices=None, fft_size=65536):
+        '''
+        Initializes radar array
+
+        Args:
+            daq
+                daq_mgr object for acquisition parameters
+            array_shape
+                tuple containing array shape in x and y
+            array_dims
+                tuple of shape "array_shape" containing 2D tuples
+                describing the x and y location of each radar in mm relative
+                to an arbitrary origin
+            array_indices [TODO]
+                tuple of shape "array_shape" containing the DAQ indeces of the
+                radars at the locations specified in the tuple
+            fft_size
+                zero-padded FFT size to be computed
+        '''
         # copy arguments into member variables
         self.daq = daq
         self.fft_size = fft_size
+        self.array_shape = array_shape
+        self.array_dims = array_dims
+        self.array_indices = array_indices
         self.initial_update = True
 
         # create radar object array

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-tracker2d_widget.py
+tracker_widget.py
 Contains parametric graph capable of plotting a tracked object's path.
 
 Author: Jason Merlo
