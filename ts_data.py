@@ -74,3 +74,6 @@ class TimeSeries:
         self.head_ptr = 0
         self._data = np.empty((self._data.shape[0],)
                               + self.frame_shape, dtype=self.dtype)
+
+    def __len__(self):
+        return self.head_ptr

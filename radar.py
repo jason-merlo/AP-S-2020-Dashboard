@@ -40,20 +40,21 @@ class Radar(object):
     Attributes:
         daq
             daq_mgr object
-        data
-            ndarray of current data <num_channels x num_samples>
-            one "frame" of data
+        ts_data
+        ts_vmax_data
+        cfft_data
     '''
 
     def __init__(self, daq, index, fft_size, f0=24.150e9):
         super(Radar, self).__init__()
-        # copy arguments into member variables
+        # copy arguments into attributes
         self.daq = daq
         self.index = index
         self.fft_size = fft_size
         self.first_update = True
         self.f0 = f0
 
+        # Initialize attributes
         self.bin_size = self.daq.sample_rate / self.fft_size
         self.center_bin = np.ceil(self.fft_size / 2)
         self.fmax = 0
