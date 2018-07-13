@@ -12,7 +12,7 @@ from geometry import Point, Circle      # storing geometric information
 
 
 class Tracker2D(object):
-    def __init__(self, radar_array, r0_array):
+    def __init__(self, radar_array):#, r0_array):
         super(Tracker2D, self).__init__()
         # copy arguments into attributes
         self.array = radar_array
@@ -25,7 +25,7 @@ class Tracker2D(object):
         self.ts_track = TimeSeries(init_length, shape, dtype=np.float32)
 
     def update_radius(self, index):
-        radar = radar_array.radars[index]
+        radar = self.array.radars[index]
         if len(radar.ts_data) > 1:
             dt = radar.ts_data.time[-1] - radar.ts_data.time[-2]
             radar.r += radar.v * dt + 0.5 * radar.a * dt**2
@@ -35,7 +35,7 @@ class Tracker2D(object):
         pass
 
     def update(self):
-        sample_time = self.radar_array.radars[0].ts_data.time[-1]
+        sample_time = self.array.radars[0][0].ts_data.time[-1]
         data = np.random.randn(2) * 0.05
         self.ts_track.append(data, sample_time)
 

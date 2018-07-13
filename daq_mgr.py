@@ -130,14 +130,14 @@ class DAQ:
                     number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
                     timeout=1.0)
                 self.time = time.time()  # +/- 16 us
-            except nidaqmx.errors.DaqError:
-                print("DAQ exception caught: Sampling too fast.")
+            except nidaqmx.errors.DaqError as err:
+                print("DAQ exception caught: {0}\n".format(err))
         # Set the update event to True once data is read in
         self.data_available.set()
 
     def close(self):
         print("Stopping sampling thread...")
+        self.running = False
         if self.daq_type == "nidaq" and self.fake_data is False:
             self.task.close()  # Close nidaq gracefully
-        self.running = False
         self.thread.join()

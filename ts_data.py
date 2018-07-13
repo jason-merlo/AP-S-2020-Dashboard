@@ -33,7 +33,7 @@ class TimeSeries:
         self.head_ptr = 0
         self._data = np.empty(
             (self.size,) + self.frame_shape, dtype=self.dtype)
-        self.time = np.empty((self.size,) + self.frame_shape, dtype=float)
+        self.time = np.empty((self.size,), dtype=float)
 
     @property
     def data(self):
@@ -55,7 +55,9 @@ class TimeSeries:
             print('=========== DATASET DOUBLED ===========')
             # expand data
             tmp = self._data
-            self._data = np.empty(self._data.shape[0] * 2, dtype=self.dtype)
+            new_shape = ((self._data.shape[0] * 2),) + self._data.shape[1:]
+            print('== NEW SIZE --> {:}'.format(new_shape[0]))
+            self._data = np.empty(new_shape, dtype=self.dtype)
             self._data[:tmp.shape[0]] = tmp
             # expand time
             tmp = self.time

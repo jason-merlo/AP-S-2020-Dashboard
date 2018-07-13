@@ -58,7 +58,7 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         self.fft_line = pg.InfiniteLine(angle=90, movable=False)
         self.fft_plot.addItem(self.fft_line)
         self.fft_ax_bottom = self.fft_plot.getAxis('bottom')
-        self.fft_ax_bottom.setScale(1 / self.radar.bin_size)
+        #self.fft_ax_bottom.setScale(1 / self.radar.bin_size)
         self.fft_plot.setLabel('bottom', text="Frequency", units="Hz")
         self.fft_plot.setLabel('left', text="Power", units="W")
 
@@ -92,7 +92,7 @@ class RadarWidget(pg.GraphicsLayoutWidget):
             s = np.clip(dt * 3., 0, 1)
             self.fps = self.fps * (1 - s) + (1.0 / dt) * s
         # self.vmax_plot.setTitle('%0.2f fps' % self.fps)
-        print('%0.2f fps' % self.fps)
+        # print('%0.2f fps' % self.fps)
 
     def update(self):
         self.radar.update()
