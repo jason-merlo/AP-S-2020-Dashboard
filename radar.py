@@ -48,7 +48,7 @@ class Radar(object):
             Point containing relative location
     '''
 
-    def __init__(self, daq, index, fft_size, f0=24.150e9, loc=Point()):
+    def __init__(self, daq, index, fft_size, f0=24.150e9, loc=Point(0,0)):
         super(Radar, self).__init__()
         # copy arguments into attributes
         self.daq = daq

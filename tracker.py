@@ -31,18 +31,27 @@ class Tracker2D(object):
         self.ts_track = TimeSeries(init_length, shape, dtype=np.float32)
 
     def update_radius(self, radar, t):
+        '''
+        Calculates radii for each radar in the array.
+
+        Args:
+            radar
+                Radar object to update
+            t
+                Time of update
+        '''
         # Append current velocity reading
-        radar.ts_v.append(radar.ts_vmax, t)
+        radar.ts_v.append(radar.vmax, t)
 
         # Need a time delta (two samples) before position can be updated
         if len(radar.ts_data) > 1:
             dt = t - radar.ts_data.time[-2]
-            r = radar.ts_r[-1]
-            v = radar.ts_v[-1]
-            a = radar.ts_a[-1]
+            r = radar.ts_r.data[-1]
+            v = radar.ts_v.data[-1]
+            a = radar.ts_a.data[-1]
 
             # Calculate radius and acceleration
-            radar.ts_a.append(v - radar.ts_v[-2], t)
+            radar.ts_a.append(v - radar.ts_v.data[-2], t)
             radar.ts_r.append(r + v * dt + 0.5 * a * dt**2, t)
         else:
             # Measure distance from origin to initial point on 2D plane
@@ -59,47 +68,40 @@ class Tracker2D(object):
     def update(self):
         sample_time = self.array.radars[0][0].ts_data.time[-1]
 
-        for radar in self.array:
-            self.update_radius(radar)
+        for radar in itertools.chain(*self.array.radars):
+            self.update_radius(radar, sample_time)
 
         intersections = []
         # flatten radars list for combinations
-        flat_array = itertools.chain(*self.array)
+        flat_array = itertools.chain(*self.array.radars)
         # find intersections between radar circles
-        for radar_pair in itertools.combinations(flat_array):
-            r1 = radar_pair[0].ts_r[-1]
-            r2 = radar_pair[1].ts_r[-1]
+        for radar_pair in itertools.combinations(flat_array, 2):
+            r1 = radar_pair[0].ts_r.data[-1]
+            r2 = radar_pair[1].ts_r.data[-1]
             p1 = radar_pair[0].loc
             p2 = radar_pair[1].loc
             c1 = Circle(p1, r1)
             c2 = Circle(p2, r2)
 
-            intersections = c1.intersections(c2)
-            self.intersections.append(intersections)
+            intersect = c1.intersections(c2)
+            intersections.append(intersect)
 
-        # Find closest points in intersections
-        # potential list contains (centroid, mse)
-        potential_list = []
-        for intersect_points in intersections:
-            potential = self.argmin_mse(intersect_points, intersections)
-            potential_list.append(potential)
+        # Find triangle with lowest area
+        potentials = itertools.product(*intersections)
+        lowest_area = -1
+        best_triangle = Triangle()
+        for p in potentials:
+            t = Triangle(*p)
+            area = t.area
+            if (area < lowest_area and lowest_area != -1):
+                lowest_area = area
+                best_triangle = t
 
-        # grab potential centroid with lowest associated mse
-        sorted_potentials = sorted(potential_list, key=lambda x: x[1])
-        self.loc = sorted_potentials[0][0]
+        # Set centroid of best triangle to new location
+        self.loc = best_triangle.centroid
 
         # Append new location to track
         self.ts_track.append(self.loc, sample_time)
-
-    def argmin_mse(self, a, b):
-        '''
-        returns a list of tuples containing (centroid, mse)
-        '''
-        for p1 in a:                     # point 1
-            for p_list in b:             # list of other points
-                if p_list != b:
-                    for p2 in p_list:    # point 2
-                        pass
 
     def clear(self):
         pass

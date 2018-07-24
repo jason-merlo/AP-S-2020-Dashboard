@@ -35,8 +35,8 @@ class Point(object):
                     self.z = args[0][2]
             except TypeError:
                 raise TypeError('Point expects tuple, got', type(args[0]))
-            except all as e:
-                raise(e)
+            #except all as e:
+            #    raise(e)
         # if argument is 2D
         elif alen == 2:
             self.x = args[0]
@@ -83,9 +83,15 @@ class Point(object):
         self.z += a
 
     def __sub__(self, a):
-        self.x -= a
-        self.y -= a
-        self.z -= a
+        if isinstance(a, Point):
+            print("POINT TYPE DETECTED....")
+            self.x -= a.x
+            self.y -= a.y
+            self.z -= a.z
+        else:
+            self.x -= a
+            self.y -= a
+            self.z -= a
 
     def __mul__(self, a):
         self.x *= a
@@ -121,13 +127,15 @@ class Circle(object):
     @circle.setter
     def circle(self, *args):
         # Default to unit circle if zero arguments provided
-        self.c = Point()
+        self.c = Point(0, 0)
         self.r = 1
 
         alen = len(args)
+
+        print("args: ", args)
         if alen == 1:
-            self.c = Point(args[0][0], args[0][1])
-            self.r = args[0][2]
+            self.c =args[0][0]
+            self.r = args[0][1]
         elif alen == 2:
             self.c = args[0]
             self.r = args[1]
@@ -211,10 +219,9 @@ class Triangle(object):
     def points(self, *args):
         alen = len(args)
         if alen == 1:
-            self.p = (args[0][0], args[0][1], args[0][2])
+            self.p = [args[0][0], args[0][1], args[0][2]]
         elif alen == 3:
-            self.p = Point(args[0], args[1])
-            self.r = args[2]
+            self.p = [args[0], args[1], args[2]]
         else:
             raise TypeError('Point expects at most three arguments, got', alen)
 
@@ -225,3 +232,13 @@ class Triangle(object):
             centroid.x += point.x
             centroid.y += point.y
         return centroid / 3
+
+    @property
+    def area(self):
+        # shoelace formula
+        p = self.points
+        a = np.array([[p[0].x, p[1].x, p[2].x],
+                     [p[0].y, p[1].y, p[2].y],
+                     [1, 1, 1]])
+        area = 0.5 * abs(np.linalg.det(a))
+        return area
