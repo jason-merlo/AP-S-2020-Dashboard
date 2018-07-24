@@ -13,6 +13,7 @@ last_modified: 7/10/2018
 import numpy as np              # Storing data
 from ts_data import TimeSeries  # storing data
 import scipy.constants as spc   # speed of light
+from geometry import Point      # radar location
 
 # DEBUG:
 import sys
@@ -41,11 +42,13 @@ class Radar(object):
         daq
             daq_mgr object
         ts_data
-        ts_vmax_data
+        ts_v
         cfft_data
+        loc
+            Point containing relative location
     '''
 
-    def __init__(self, daq, index, fft_size, f0=24.150e9):
+    def __init__(self, daq, index, fft_size, f0=24.150e9, loc=Point()):
         super(Radar, self).__init__()
         # copy arguments into attributes
         self.daq = daq
@@ -53,6 +56,7 @@ class Radar(object):
         self.fft_size = fft_size
         self.first_update = True
         self.f0 = f0
+        self.loc = loc
 
         # Initialize attributes
         self.bin_size = self.daq.sample_rate / self.fft_size
@@ -60,15 +64,21 @@ class Radar(object):
         self.fmax = 0
         self.vmax = 0
 
+        self.phi = 0
+        self.theta = 0
+
         # initial array size 4096 samples
         length = 4096
         data_shape = (2, self.daq.sample_size)
-        fft_shape = (self.fft_size,)
 
         # initialize data arrays
         self.ts_data = TimeSeries(length, data_shape, dtype=np.complex64)
-        self.ts_vmax_data = TimeSeries(length, (), dtype=np.float32)
         self.cfft_data = np.empty(fft_size, dtype=np.float32)
+
+        # Initialize kinematics timeseries
+        self.ts_r = TimeSeries(length)
+        self.ts_v = TimeSeries(length)
+        self.ts_a = TimeSeries(length)
 
         # Generate FFT frequency labels
         self.fft_freqs = []
@@ -127,11 +137,11 @@ class Radar(object):
         vmax_bin = np.argmax(self.cfft_data).astype(np.int32)
         self.fmax = self.bin_to_freq(vmax_bin)
         self.vmax = self.freq_to_vel(self.fmax)
-        self.ts_vmax_data.append(self.vmax, sample_time)
+        self.ts_v.append(self.vmax, sample_time)
 
     def clear(self):
         self.ts_data.clear()
-        self.ts_vmax_data.clear()
+        self.ts_v.clear()
 
 
 class RadarArray(object):
@@ -148,7 +158,8 @@ class RadarArray(object):
             size of FFT to compute
     '''
 
-    def __init__(self, daq, array_shape, array_dims, array_indices=None, fft_size=65536):
+    def __init__(self, daq, array_shape, array_dims, array_indices=None,
+                 fft_size=65536):
         '''
         Initializes radar array
 

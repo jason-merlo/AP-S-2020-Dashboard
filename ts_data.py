@@ -5,7 +5,7 @@ Contains TimeSeries class
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/10/2018
+last_modified: 7/23/2018
 '''
 import numpy as np              # Storing data
 
@@ -25,7 +25,7 @@ class TimeSeries:
             pointer to head index of time and data arrays
     '''
 
-    def __init__(self, length, shape, dtype=float):
+    def __init__(self, length, shape=(), dtype=np.float32):
         self.size = length  # Length of initial data buffer (in frames)
         self.frame_shape = shape  # Shape of single data frame
         self.dtype = dtype

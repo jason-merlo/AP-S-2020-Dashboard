@@ -4,30 +4,39 @@ geometry.py
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/12/2018
+last_modified: 7/20/2018
 '''
+import numpy as np
+
+
 class Point(object):
     def __init__(self, *args):
-        self.l = args
+        self.p = args
 
     @property
-    def l(self):
+    def p(self):
         return (self.x, self.y)
 
-    @l.setter
-    def l(self, *args):
+    @p.setter
+    def p(self, *args):
         # Defult to origin if zero arguments provided
-        self.x, self.y, self.z = 0
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        alen = len(args)
 
         # if argument is tuple
         if alen == 1:
-            if type(args[0]) != type(touple()):
+            try:
+                self.x = args[0][0]
+                self.y = args[0][1]
+                # if tuple is 3D
+                if len(args[0]) == 3:
+                    self.z = args[0][2]
+            except TypeError:
                 raise TypeError('Point expects tuple, got', type(args[0]))
-            self.x = args[0][0]
-            self.y = args[0][1]
-            # if tuple is 3D
-            if len(args[0]) == 3:
-                self.z = args[0][2]
+            except all as e:
+                raise(e)
         # if argument is 2D
         elif alen == 2:
             self.x = args[0]
@@ -40,10 +49,13 @@ class Point(object):
         elif alen != 0:
             raise TypeError('Point expects at most three arguments, got', alen)
 
-    def distance(self, a):
+    def distance(self, a=None):
         '''
         Find distance between self and another Point
         '''
+        # If no arguments provided, compare to origin
+        if a is None:
+            a = Point(0, 0)
         dx = self.x - a.x
         dy = self.y - a.y
         dz = self.z - a.z
@@ -85,8 +97,21 @@ class Point(object):
         self.y /= a
         self.z /= a
 
+
 class Circle(object):
     def __init__(self, *args):
+        '''
+        Circle class, holds Point and radius, also finds intersections
+
+        Args:
+            tuple
+                (Point(), r)
+            (or)
+            Point()
+                Point object containing center of circle
+            r
+                Number indicating radius of circle
+        '''
         self.circle = args
 
     @property
@@ -143,17 +168,17 @@ class Circle(object):
             dir.normalize()
             # ditance between circumferences
             dc = c1.r - c2.r - dist
-            mp_dist = dist + c2.r + mp_dist / 2
+            mp_dist = dist + c2.r + dist / 2  # NOTE Changed mp_dist to dist
 
             result = [dir * mp_dist]
         # Circles intersect
         if dist < self.r + c.r:
             # distance to midpoint within both circumferences
-            mp_dist = (self.r**2 - c.r**2 + 2* dist) / 2 * dist
+            mp_dist = (self.r**2 - c.r**2 + 2 * dist) / 2 * dist
             # distance to intersection from midpoint
             height = np.sqrt(self.r**2 - mp_dist**2)
             # Point object between both circumferences
-            midpoint = self.c + mp_dist * (c.c - self.c) / 2
+            # midpoint = self.c + mp_dist * (c.c - self.c) / 2
             # intersections
             P1 = Point()
             P2 = Point()

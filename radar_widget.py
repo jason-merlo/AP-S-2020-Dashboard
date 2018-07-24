@@ -5,7 +5,7 @@ Contains RadarWidget class used to draw the max frequency and FFT graphs
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/10/2018
+last_modified: 7/23/2018
 '''
 import pyqtgraph as pg          # Used for RadarWidget superclass
 import numpy as np              # Used for numerical operations
@@ -68,19 +68,21 @@ class RadarWidget(pg.GraphicsLayoutWidget):
 
     def update_vmax(self):
         # Update fmax graph
-        vmax_data = self.radar.ts_vmax_data.data
-        vmax_ptr = self.radar.ts_vmax_data.head_ptr
+        vmax_data = self.radar.ts_v.data
+        vmax_ptr = self.radar.ts_v.head_ptr
         self.vmax_pw.setData(vmax_data)
         self.vmax_pw.setPos(-vmax_ptr, 0)
 
         # draw max FFT line
         self.fft_line.setValue(self.radar.fmax)
-        self.vmax_plot.setTitle('Max Velocity:\t{:+0.4f} (m/s)'.format(vmax_data[-1]))
+        self.vmax_plot.setTitle(
+            'Max Velocity:\t{:+0.4f} (m/s)'.format(vmax_data[-1]))
 
     def update_fft(self):
         self.fft_pw.setData(self.radar.cfft_data)
         self.fft_pw.setPos(-self.radar.center_bin, 0)
-        self.fft_plot.setTitle('Max Frequency:\t{:+0.4f} (Hz)'.format(self.radar.fmax))
+        self.fft_plot.setTitle(
+            'Max Frequency:\t{:+0.4f} (Hz)'.format(self.radar.fmax))
 
     def update_fps(self):
         now = time.time()
