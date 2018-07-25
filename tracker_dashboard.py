@@ -5,7 +5,7 @@ Main file for quad doppler radar tracking project
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/3/2018
+last_modified: 7/25/2018
 '''
 # === Window / UI ===
 import pyqtgraph as pg                  # GUI event timer
@@ -21,6 +21,8 @@ import radar                            # RadaryArray object
 import tracker                          # 2D tracker object
 # === Database ===
 import h5py                             # Database storage
+# === Geometry primatives ===
+from geometry import Point              # Radar locations
 # === GUI Elements ===
 from data_window import DataWindow
 
@@ -72,10 +74,12 @@ def main():
 
     # Create array and trackers
     array_shape = (2, 2)
-    array_dims = (((0,     0),  (0,     105.6)),
-                  ((105.6, 0),  (105.6, 105.6)))  # mm
+    array_indices = ((0, 3),
+                     (1, 2))
+    array_dims = ((Point(0,     0),  Point(0,     0.081)),
+                  (Point(0.081, 0),  Point(0.081, 0.081)))  # m
     radar_array = radar.RadarArray(
-        daq, array_shape, array_dims, fft_size=FFT_SIZE)
+        daq, array_shape, fft_size=FFT_SIZE, locations=array_dims, indices=array_indices)
     tracker2d = tracker.Tracker2D(radar_array)
 
     # Instantiate and display data-viewing window (close gracefully on failure)

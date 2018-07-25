@@ -4,7 +4,7 @@ geometry.py
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/20/2018
+last_modified: 7/25/2018
 '''
 import numpy as np
 
@@ -27,15 +27,17 @@ class Point(object):
 
         # if argument is tuple
         if alen == 1:
-            try:
-                self.x = args[0][0]
-                self.y = args[0][1]
-                # if tuple is 3D
-                if len(args[0]) == 3:
-                    self.z = args[0][2]
-            except TypeError:
-                raise TypeError('Point expects tuple, got', type(args[0]))
-            #except all as e:
+            if len(args[0]) != 0:
+                try:
+                    self.x = args[0][0]
+                    self.y = args[0][1]
+                    # if tuple is 3D
+                    if len(args[0]) == 3:
+                        self.z = args[0][2]
+                except TypeError:
+                    raise TypeError('Point expects tuple, or two numbers, '
+                    'or three numbers; got', type(args[0]))
+            # except all as e:
             #    raise(e)
         # if argument is 2D
         elif alen == 2:
@@ -66,25 +68,33 @@ class Point(object):
         will convert Point into a vector of length 1
         '''
         len = self.length
-        self.x /= len
-        self.y /= len
-        self.z /= len
+        if len != 0:
+            self.x /= len
+            self.y /= len
+            self.z /= len
 
     @property
     def length(self):
         '''
         Returns the distance of the point from the origin
         '''
-        return np.sqrt(self.x**2 + self.y**2 + self.z**2)
+        a = self.x**2 + self.y**2 + self.z**2
+        return np.sqrt(a)
 
     def __add__(self, a):
-        self.x += a
-        self.y += a
-        self.z += a
+        if isinstance(a, Point):
+            self.x += a.x
+            self.y += a.y
+            self.z += a.z
+        else:
+            self.x += a
+            self.y += a
+            self.z += a
+
+        return self
 
     def __sub__(self, a):
         if isinstance(a, Point):
-            print("POINT TYPE DETECTED....")
             self.x -= a.x
             self.y -= a.y
             self.z -= a.z
@@ -93,15 +103,34 @@ class Point(object):
             self.y -= a
             self.z -= a
 
-    def __mul__(self, a):
-        self.x *= a
-        self.y *= a
-        self.z *= a
+        return self
 
-    def __div__(self, a):
-        self.x /= a
-        self.y /= a
-        self.z /= a
+    def __mul__(self, a):
+        if isinstance(a, Point):
+            self.x *= a.x
+            self.y *= a.y
+            self.z *= a.z
+        else:
+            self.x *= a
+            self.y *= a
+            self.z *= a
+
+        return self
+
+    def __truediv__(self, a):
+        if isinstance(a, Point):
+            self.x /= a.x
+            self.y /= a.y
+            self.z /= a.z
+        else:
+            self.x /= a
+            self.y /= a
+            self.z /= a
+
+        return self
+
+    def __repr__(self):
+        return '({:+7.3f}, {:+7.3f}, {:+7.3f})'.format(self.x, self.y, self.z)
 
 
 class Circle(object):
@@ -132,10 +161,15 @@ class Circle(object):
 
         alen = len(args)
 
-        print("args: ", args)
         if alen == 1:
-            self.c =args[0][0]
-            self.r = args[0][1]
+            if len(args[0]) != 0:
+                try:
+                    self.c = args[0][0]
+                    self.r = args[0][1]
+                except TypeError:
+                    raise TypeError(
+                        'Circle expects tuple, a Point and number, '
+                        'or three numbers; got', type(args[0]))
         elif alen == 2:
             self.c = args[0]
             self.r = args[1]
@@ -143,7 +177,8 @@ class Circle(object):
             self.c = Point(args[0], args[1])
             self.r = args[2]
         elif alen != 0:
-            raise TypeError('Point expects at most three arguments, got', alen)
+            raise TypeError(
+                'Circle expects at most three arguments, got', alen)
 
     def intersections(self, c):
         '''
@@ -166,11 +201,11 @@ class Circle(object):
         # One circle is contained within the other
         if dist < np.absolute(self.r - c.r):
             if self.r > c.r:
-                c1 = self.circle
-                c2 = c.circle
+                c1 = self
+                c2 = c
             else:
-                c1 = c.circle
-                c2 = self.circle
+                c1 = c
+                c2 = self
             # get unit vector towards smaller circle within larger circle
             dir = c2.c - c1.c
             dir.normalize()
@@ -190,10 +225,10 @@ class Circle(object):
             # intersections
             P1 = Point()
             P2 = Point()
-            P1.x = c.x + height * (c.c.y - self.c.y) / dist
-            P1.y = c.y - height * (c.c.x - self.c.x) / dist
-            P2.x = c.x - height * (c.c.y - self.c.y) / dist
-            P2.y = c.y + height * (c.c.x - self.c.x) / dist
+            P1.x = c.c.x + height * (c.c.y - self.c.y) / dist
+            P1.y = c.c.y - height * (c.c.x - self.c.x) / dist
+            P2.x = c.c.x - height * (c.c.y - self.c.y) / dist
+            P2.y = c.c.y + height * (c.c.x - self.c.x) / dist
             result = [P1, P2]
         # circles do not intersect, and are not inside one another
         else:
@@ -217,28 +252,38 @@ class Triangle(object):
 
     @points.setter
     def points(self, *args):
+        self.p = (Point(), Point(), Point())
+
         alen = len(args)
         if alen == 1:
-            self.p = [args[0][0], args[0][1], args[0][2]]
+            if len(args[0]) != 0:
+                try:
+                    self.p = (args[0][0], args[0][1], args[0][2])
+                except TypeError:
+                    raise TypeError('Triangle expects tuple, or three numbers;'
+                    ' got', type(args[0]))
         elif alen == 3:
-            self.p = [args[0], args[1], args[2]]
+            self.p = (args[0], args[1], args[2])
         else:
-            raise TypeError('Point expects at most three arguments, got', alen)
+            raise TypeError(
+                'Triangle expects at most three arguments, got', alen)
 
     @property
     def centroid(self):
         centroid = Point()
         for point in self.points:
-            centroid.x += point.x
-            centroid.y += point.y
+            centroid += point
         return centroid / 3
 
     @property
     def area(self):
-        # shoelace formula
+        # Determinant method
         p = self.points
         a = np.array([[p[0].x, p[1].x, p[2].x],
-                     [p[0].y, p[1].y, p[2].y],
-                     [1, 1, 1]])
+                      [p[0].y, p[1].y, p[2].y],
+                      [1, 1, 1]])
         area = 0.5 * abs(np.linalg.det(a))
         return area
+
+    def __repr__(self):
+        return 'Triangle:\n\t{:}\n\t{:}\n\t{:}'.format(*self.points)

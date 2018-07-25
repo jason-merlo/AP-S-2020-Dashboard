@@ -33,11 +33,15 @@ class TimeSeries:
         self.head_ptr = 0
         self._data = np.empty(
             (self.size,) + self.frame_shape, dtype=self.dtype)
-        self.time = np.empty((self.size,), dtype=float)
+        self._time = np.empty((self.size,), dtype=float)
 
     @property
     def data(self):
         return self._data[:self.head_ptr]
+
+    @property
+    def time(self):
+        return self._time[:self.head_ptr]
 
     def append(self, data, time):
         '''
@@ -60,13 +64,13 @@ class TimeSeries:
             self._data = np.empty(new_shape, dtype=self.dtype)
             self._data[:tmp.shape[0]] = tmp
             # expand time
-            tmp = self.time
-            self.time = np.empty(self.time.shape[0] * 2, dtype=float)
-            self.time[:tmp.shape[0]] = tmp
+            tmp = self._time
+            self._time = np.empty(self._time.shape[0] * 2, dtype=float)
+            self._time[:tmp.shape[0]] = tmp
 
         # Update the long-term iq_data store buffer
         self._data[self.head_ptr] = data
-        self.time[self.head_ptr] = time
+        self._time[self.head_ptr] = time
         self.head_ptr += 1
 
     def clear(self):

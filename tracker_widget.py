@@ -5,7 +5,7 @@ Contains parametric graph capable of plotting a tracked object's path.
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/11/2018
+last_modified: 7/25/2018
 '''
 import pyqtgraph as pg          # Used for RadarWidget superclass
 import numpy as np              # Used for numerical operations
@@ -40,7 +40,8 @@ class Tracker2DWidget(pg.GraphicsLayoutWidget):
     def update(self):
         # Update fmax graph
         self.tracker.update()
-        data =self.tracker.ts_track.data[-self.trail:]
+        data = self.tracker.ts_track.data[-self.trail:]
+        data = np.array([(p.x, p.y) for p in data])
         self.pw.setData(data)
 
     def reset(self):

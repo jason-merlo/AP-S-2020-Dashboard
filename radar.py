@@ -8,7 +8,7 @@ FFT slices, and max frequency.
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/10/2018
+last_modified: 7/25/2018
 '''
 import numpy as np              # Storing data
 from ts_data import TimeSeries  # storing data
@@ -42,13 +42,13 @@ class Radar(object):
         daq
             daq_mgr object
         ts_data
-        ts_v
+        ts_drho
         cfft_data
         loc
             Point containing relative location
     '''
 
-    def __init__(self, daq, index, fft_size, f0=24.150e9, loc=Point(0,0)):
+    def __init__(self, daq, index, fft_size, f0=24.150e9, loc=Point()):
         super(Radar, self).__init__()
         # copy arguments into attributes
         self.daq = daq
@@ -64,8 +64,10 @@ class Radar(object):
         self.fmax = 0
         self.vmax = 0
 
+        self.rho_vec = Point()
         self.phi = 0
         self.theta = 0
+        self.r = 0  # 2D projection of rho onto azimuth plane
 
         # initial array size 4096 samples
         length = 4096
@@ -76,6 +78,7 @@ class Radar(object):
         self.cfft_data = np.empty(fft_size, dtype=np.float32)
 
         # Initialize kinematics timeseries
+        self.ts_drho = TimeSeries(length)
         self.ts_r = TimeSeries(length)
         self.ts_v = TimeSeries(length)
         self.ts_a = TimeSeries(length)
@@ -125,6 +128,7 @@ class Radar(object):
         # Get sample time from DAQ
         if self.first_update:
             self.init_time = self.daq.time
+            self.first_update = False
         sample_time = self.daq.time - self.init_time
 
         # Get data from DAQ
@@ -137,11 +141,11 @@ class Radar(object):
         vmax_bin = np.argmax(self.cfft_data).astype(np.int32)
         self.fmax = self.bin_to_freq(vmax_bin)
         self.vmax = self.freq_to_vel(self.fmax)
-        self.ts_v.append(self.vmax, sample_time)
+        self.ts_drho.append(self.vmax, sample_time)
 
     def clear(self):
         self.ts_data.clear()
-        self.ts_v.clear()
+        self.ts_drho.clear()
 
 
 class RadarArray(object):
@@ -158,8 +162,8 @@ class RadarArray(object):
             size of FFT to compute
     '''
 
-    def __init__(self, daq, array_shape, array_dims, array_indices=None,
-                 fft_size=65536):
+    def __init__(self, daq, array_shape, locations=None,
+                 indices=None, fft_size=65536):
         '''
         Initializes radar array
 
@@ -168,9 +172,9 @@ class RadarArray(object):
                 daq_mgr object for acquisition parameters
             array_shape
                 tuple containing array shape in x and y
-            array_dims
-                tuple of shape "array_shape" containing 2D tuples
-                describing the x and y location of each radar in mm relative
+            locations
+                tuple of shape "array_shape" containing 2D Points
+                describing the x and y location of each radar in m relative
                 to an arbitrary origin
             array_indices [TODO]
                 tuple of shape "array_shape" containing the DAQ indeces of the
@@ -182,8 +186,8 @@ class RadarArray(object):
         self.daq = daq
         self.fft_size = fft_size
         self.array_shape = array_shape
-        self.array_dims = array_dims
-        self.array_indices = array_indices
+        self.locations = locations
+        self.indices = indices
         self.initial_update = True
 
         # create radar object array
@@ -191,8 +195,15 @@ class RadarArray(object):
         for i in range(array_shape[1]):
             radar_row = []
             for j in range(array_shape[0]):
-                index = array_shape[0] * j + i
-                radar_row.append(Radar(daq, index, fft_size))
+                if self.locations:
+                    loc = self.locations[i][j]
+                else:
+                    loc = None
+                if self.indices:
+                    index = self.indices[i][j]
+                else:
+                    index = array_shape[0] * j + i
+                radar_row.append(Radar(daq, index, fft_size, loc=loc))
             self.radars.append(radar_row)
 
     def clear(self):

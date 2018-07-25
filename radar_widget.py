@@ -68,7 +68,7 @@ class RadarWidget(pg.GraphicsLayoutWidget):
 
     def update_vmax(self):
         # Update fmax graph
-        vmax_data = self.radar.ts_v.data
+        vmax_data = self.radar.ts_drho.data
         vmax_ptr = self.radar.ts_v.head_ptr
         self.vmax_pw.setData(vmax_data)
         self.vmax_pw.setPos(-vmax_ptr, 0)
