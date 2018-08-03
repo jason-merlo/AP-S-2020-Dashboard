@@ -14,7 +14,7 @@ from geometry import Point, Circle
 
 
 class Tracker2DWidget(pg.GraphicsLayoutWidget):
-    def __init__(self, tracker, xRange=[-0.20,0.20], yRange=[-0.20,0.20], trail=1):
+    def __init__(self, tracker, xRange=[-0.10,0.10], yRange=[-0.10,0.10], trail=1):
         super(Tracker2DWidget, self).__init__()
 
         # Copy arguments to member variables
@@ -77,7 +77,7 @@ class Tracker2DWidget(pg.GraphicsLayoutWidget):
                 self.draw_circle(pt, Circle(radar.loc, vel))
 
     def reset(self):
-        self.tracker.ts_track.clear()
+        self.tracker.reset()
         self.update()
 
     def draw_circle(self, curve, cir, num_pts=50, color="AAFFFF16"):

@@ -105,7 +105,7 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         self.update_fps()
 
     def reset(self):
-        self.radar.clear()
+        self.radar.reset()
         # When paused, redraw after reset
         if self.daq.pause:
             self.update()

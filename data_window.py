@@ -28,20 +28,20 @@ class DataWindow(QtGui.QTabWidget):
         self.tab_data = QtGui.QWidget()
         self.tab_tracker2d = QtGui.QWidget()
         self.addTab(self.tab_data, "Data Viewer")
-        self.addTab(self.tab_tracker2d, "Tracker2D")
+        #self.addTab(self.tab_tracker2d, "Tracker2D")
 
         # Initialize tab layouts
-        self.tab_dataUI()
         self.tab_tracker2dUI()
+        self.tab_dataUI()
 
         # Set tracker to default tab
-        self.setCurrentWidget(self.tab_tracker2d)
+        #self.setCurrentWidget(self.tab_tracker2d)
 
     def tab_dataUI(self):
         # Create panel objects
         layout = QtGui.QGridLayout()
         self.graph_panel = GraphPanel(self.daq, self.radar_array)
-        self.control_panel = ControlPanel(self.daq, self.graph_panel)
+        self.control_panel = ControlPanel(self.daq, self.tracker)
 
         # Create splitter widget
         h_split = QtGui.QSplitter(QtCore.Qt.Horizontal)
@@ -49,6 +49,7 @@ class DataWindow(QtGui.QTabWidget):
         # Add panels to splitter widget
         h_split.addWidget(self.control_panel)
         h_split.addWidget(self.graph_panel)
+        h_split.addWidget(self.tracker2d_widget)
 
         layout.addWidget(h_split)
 
@@ -75,7 +76,7 @@ class DataWindow(QtGui.QTabWidget):
             else:
                 self.daq.pause = True
         elif event.key() == QtCore.Qt.Key_R:
-            self.graph_panel.reset()
+            self.tracker.reset()
         elif event.key() == QtCore.Qt.Key_Escape:
             os.kill(os.getpid(), signal.SIGINT)
         event.accept()

@@ -178,7 +178,7 @@ class Radar(object):
         self.sum += self.vmax
         # print("RADAR_AVERAGE:", self.sum / self.loop_num)
 
-    def clear(self):
+    def reset(self):
         self.ts_data.clear()
         self.ts_drho.clear()
         self.ts_v.clear()
@@ -248,10 +248,10 @@ class RadarArray(object):
                     Radar(daq, index, fft_size, fft_window_size=self.fft_window_size, loc=loc))
             self.radars.append(radar_row)
 
-    def clear(self):
+    def reset(self):
         for row in self.radars:
             for radar in row:
-                radar.clear()
+                radar.reset()
 
     def update(self, data):
         for row in self.radars:

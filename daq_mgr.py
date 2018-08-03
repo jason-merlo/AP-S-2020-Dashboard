@@ -16,7 +16,7 @@ from time import sleep          # Used for sleeping sampling thread
 import numpy as np
 
 
-class DAQ:
+class DAQ(object):
     def __init__(self, daq_type="nidaq",
                  sample_rate=44100, sample_size=4096,
                  # NI-DAQ specific

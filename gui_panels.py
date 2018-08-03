@@ -75,12 +75,12 @@ class ControlPanel(pg.LayoutWidget):
     Keeps track of stop/start, reset, load/save datasets, and label controls
     '''
 
-    def __init__(self, daq, graph_panel):
+    def __init__(self, daq, tracker):
         pg.LayoutWidget.__init__(self)
 
         # Copy member objects
         self.daq = daq
-        self.graph_panel = graph_panel
+        self.tracker = tracker
 
         # Add buttons to screen
         self.add_control_buttons()
@@ -202,4 +202,4 @@ class ControlPanel(pg.LayoutWidget):
             print("DAQ paused.")
 
     def reset_button_handler(self):
-        self.graph_panel.reset()
+        self.tracker.reset()

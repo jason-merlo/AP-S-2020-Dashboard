@@ -56,6 +56,7 @@ class Tracker2D(object):
         radar.r = Point(radar.rho_vec.x, radar.rho_vec.y).length
 
         radar.theta = np.arctan2(radar.rho_vec.y, radar.rho_vec.x)
+        print(radar.rho_vec)
         assert(radar.rho_vec.z > 0), 'Implausibility: rho_vec.z <= 0'
         radar.phi = np.arctan(radar.r / radar.rho_vec.z)
 
@@ -179,5 +180,7 @@ class Tracker2D(object):
                 self.update_relative_positions(radar)
                 self.update_radius(radar, sample_time)
 
-    def clear(self):
-        pass
+    def reset(self):
+        self.ts_track.clear()
+        self.array.reset()
+        self.loc = Point(0.0, 0.0, 0.1794)

@@ -15,6 +15,7 @@ import sys                              # Exit gracefully
 import traceback                        # Handling errors gracefully
 # === Sampling / Hardware ===
 import daq_mgr                          # DAQ hardware
+import data_mgr
 import threading                        # Independant sampling thread
 import radar                            # RadaryArray object
 # === Tracking ===
@@ -56,18 +57,6 @@ warnings.showwarning = warn_with_traceback
 # ===============================
 
 
-
-
-
-def init_daq():
-    '''
-    Creates DAQ object, starts sampling, returns object
-    '''
-    daq = daq_mgr.DAQ(sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE)
-    daq.start_sampling()
-    return daq
-
-
 def init_signal_handler(app, daq):
     '''
     Connects signals for ctrl-c event and window 'X' button event to the
@@ -95,7 +84,11 @@ def main():
 
     # Create application context and setup sampler and signal handler
     app = pg.QtGui.QApplication([])
-    daq = init_daq()
+    daq = daq_mgr.DAQ(sample_rate=DAQ_SAMPLE_RATE, sample_size=DAQ_SAMPLE_SIZE)
+
+    data_mgr = DataManager()
+    data_mgr.add_source(daq)
+
     init_signal_handler(app, daq)
 
     # Create array and trackers
@@ -114,6 +107,7 @@ def main():
     try:
         data_win = DataWindow(daq, radar_array, tracker2d)
         data_win.setGeometry(160, 140, 1400, 800)
+        data_win.showMaximized()
         data_win.show()
     except:
         # Catch all errors and exit for dev purposes

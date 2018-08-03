@@ -10,7 +10,7 @@ last_modified: 7/31/2018
 import numpy as np              # Storing data
 
 
-class TimeSeries:
+class TimeSeries(object):
     '''Time series data class
 
     This module contains the TimeSeries data class which stores timeseries
