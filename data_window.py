@@ -5,6 +5,10 @@ from pyqtgraph import QtCore, QtGui     # Qt Elements
 # === GUI Elements ===
 from gui_panels import GraphPanel, ControlPanel, Tracker2DPanel
 
+import os, signal                       # handle escape to exit
+
+
+NUM_TABS = 2
 
 class DataWindow(QtGui.QTabWidget):
     def __init__(self, daq, radar_array, tracker, parent=None):
@@ -17,6 +21,9 @@ class DataWindow(QtGui.QTabWidget):
         # Setup window
         self.setWindowTitle('Radar Tracking Visualizer')
 
+        # Allow tabs to switch with keys
+        #self.setUsesScrollButtons(True)
+
         # Create tabs
         self.tab_data = QtGui.QWidget()
         self.tab_tracker2d = QtGui.QWidget()
@@ -26,6 +33,9 @@ class DataWindow(QtGui.QTabWidget):
         # Initialize tab layouts
         self.tab_dataUI()
         self.tab_tracker2dUI()
+
+        # Set tracker to default tab
+        self.setCurrentWidget(self.tab_tracker2d)
 
     def tab_dataUI(self):
         # Create panel objects
@@ -54,9 +64,18 @@ class DataWindow(QtGui.QTabWidget):
 
     # Set gui update timer
     def update_gui(self):
-        # Only update if new data is available
-        if self.daq.data_available.is_set():
-            self.graph_panel.update()
-            self.tracker2d_widget.update()
-            # Clear DAQ event once GUI update ends
-            self.daq.data_available.clear()
+        print('GUI Update Ran.')
+        self.graph_panel.update()
+        self.tracker2d_widget.update()
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Space:
+            if self.daq.pause == True:
+                self.daq.pause = False
+            else:
+                self.daq.pause = True
+        elif event.key() == QtCore.Qt.Key_R:
+            self.graph_panel.reset()
+        elif event.key() == QtCore.Qt.Key_Escape:
+            os.kill(os.getpid(), signal.SIGINT)
+        event.accept()

@@ -4,16 +4,18 @@ tracker.py
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/25/2018
+last_modified: 7/31/2018
 '''
 import numpy as np                            # Storing data
 from ts_data import TimeSeries                # storing data
 from geometry import Point, Circle, Triangle  # storing geometric information
 import itertools                              # 'triangulating' radar radii
+import math
+import sys
 
 
 class Tracker2D(object):
-    def __init__(self, radar_array, start_loc=Point(0, 0, 0.14)):
+    def __init__(self, daq, radar_array, start_loc=Point(0.0, 0.0, 0.1794)):
         '''
         Args:
         radar_array
@@ -23,6 +25,7 @@ class Tracker2D(object):
         '''
         super(Tracker2D, self).__init__()
         # copy arguments into attributes
+        self.daq = daq
         self.array = radar_array
         self.loc = start_loc
 
@@ -30,23 +33,35 @@ class Tracker2D(object):
         self.ts_track = TimeSeries(init_length, dtype=Point)
 
     def rho_to_r(self, rho, phi):
+        '''
+           r
+        ______
+        |    /
+        |   /
+        |  / rho
+        |_/
+        |/phi
+
+        '''
         return rho * np.sin(phi)
 
     def update_relative_positions(self, radar):
         '''
         Updates rho, phi, theta, and 2D projection, r, of tracked object
         relative to each radar object/module
+
+        NOTE: Math varified
         '''
         radar.rho_vec = self.loc - radar.loc
-        print('rho_vec: ', radar.rho_vec)
         radar.r = Point(radar.rho_vec.x, radar.rho_vec.y).length
 
         radar.theta = np.arctan2(radar.rho_vec.y, radar.rho_vec.x)
-        radar.phi = np.arctan(radar.rho_vec.z / radar.r)
+        assert(radar.rho_vec.z > 0), 'Implausibility: rho_vec.z <= 0'
+        radar.phi = np.arctan(radar.r / radar.rho_vec.z)
 
-        print('rho:{:+7.3}, phi:{:+7.3}, theta:{:+7.3}, r:{:+7.3}'.format(radar.rho_vec.length, radar.phi, radar.theta, radar.r))
+        # print('rho:{:+7.3}, phi:{:+7.3}, theta:{:+7.3}, r:{:+7.3}'.format(
+            # radar.rho_vec.length, radar.phi, radar.theta, radar.r))
 
-    # TODO needs to use current loc for radii update
     def update_radius(self, radar, t):
         '''
         Calculates new radii for each radar in the array based on the
@@ -60,14 +75,15 @@ class Tracker2D(object):
         '''
 
         # Append new 2D data
-        radar.ts_r.append(radar.r, t)
-        radial_vel = self.rho_to_r(radar.vmax, radar.phi)
-        print('radial_vel: ', radial_vel)
+        if len(radar.ts_v) > 0:
+            radial_vel = self.rho_to_r(radar.vmax, radar.phi) * 0.5 + radar.ts_v[-1] * 0.5
+        else:
+            radial_vel = self.rho_to_r(radar.vmax, radar.phi)
         radar.ts_v.append(radial_vel, t)
 
         # Need a time delta (two samples) before position can be updated
-        if len(radar.ts_data) > 1:
-            dt = t - radar.ts_data.time[-2]
+        if len(radar.ts_a) > 0:
+            dt = radar.ts_data.time[-1] - radar.ts_data.time[-2]
             r = radar.r  # radar.ts_r.data[-1]
             v = radar.ts_v.data[-1]
             a = radar.ts_a.data[-1]
@@ -78,15 +94,11 @@ class Tracker2D(object):
             radar.ts_a.append(ap, t)
             radar.ts_r.append(rp, t)
             print(
-                'rp: {:+7.3f}, v: {:+7.3f}, ap: {:+7.3f}, dt: {:+7.3f}'\
+                'new values: r: {:+7.3f}, v: {:+7.3f}, a: {:+7.3f}, dt: {:+7.3f}'
                 .format(rp, v, ap, dt))
         else:
-            # Measure distance from origin to initial point on 2D plane
-            p = self.loc
-            p.z = 0
-            r = p.distance()
-
-            radar.ts_r.append(r, t)
+            # Append initial values
+            radar.ts_r.append(radar.r, t)
             radar.ts_a.append(0, t)
 
     def update(self):
@@ -94,53 +106,78 @@ class Tracker2D(object):
         Updates position of track based on differential position updates
         of each element in the array.
         '''
-        sample_time = self.array.radars[0][0].ts_data.time[-1]
+        # Loop through all new data that has arrived in the buffer
+        buffer = self.daq.buffer
+        for i in range(len(buffer)):
 
-        for radar in itertools.chain(*self.array.radars):
-            self.update_relative_positions(radar)
-            self.update_radius(radar, sample_time)
+            print('Tracker update ran.')
 
-        intersections = []
-        # flatten radars list for combinations
-        flat_array = itertools.chain(*self.array.radars)
+            # Get new radar data
+            data = buffer.pop()
+            self.array.update(data)
 
-        # find intersections between radar circles
-        for radar_pair in itertools.combinations(flat_array, 2):
-            # Get most recent radius data
-            r1 = radar_pair[0].ts_r.data[-1]
-            r2 = radar_pair[1].ts_r.data[-1]
+            # Check to see if this is the first loop
+            # Cannot update without time delta (two loops)
+            if len(self.array.radars[0][0].ts_r) > 0:
+                intersections = []
+                # flatten radars list for combinations
+                flat_array = itertools.chain(*self.array.radars)
 
-            # Get radar locations
-            p1 = radar_pair[0].loc
-            p2 = radar_pair[1].loc
+                # find intersections between radar circles
+                for radar_pair in itertools.combinations(flat_array, 2):
+                    # Get most recent radius data
+                    r1 = radar_pair[0].ts_r.data[-1]
+                    r2 = radar_pair[1].ts_r.data[-1]
 
-            # Create circle objects from radar information
-            c1 = Circle(p1, r1)
-            c2 = Circle(p2, r2)
+                    # Get radar locations
+                    p1 = radar_pair[0].loc
+                    p2 = radar_pair[1].loc
 
-            # Calculate all intersections, or nearest approximate intersection
-            intersect = c1.intersections(c2)
-            intersections.append(intersect)
+                    # Create circle objects from radar information
+                    c1 = Circle(p1, r1)
+                    c2 = Circle(p2, r2)
+                    # print(c1)
+                    # print(c2)
 
-        # Find triangle with lowest area
-        potentials = itertools.product(*intersections)
-        lowest_area = -1
-        best_triangle = Triangle()
-        for p in potentials:
-            t = Triangle(*p)
-            area = t.area
-            if (area < lowest_area or lowest_area == -1):
-                lowest_area = area
-                best_triangle = t
+                    # Calculate all intersections, or nearest approximate intersection
+                    intersect = c1.intersections(c2)  #TODO check for zero bias
+                    # print(intersect)
+                    # print('='*50)
+                    intersections.append(intersect)
 
-        # Set centroid of best triangle to new location
-        self.loc = best_triangle.centroid
+                # Find triangle with lowest area
+                potentials = itertools.product(*intersections)
+                lowest_area = -1
+                best_triangle = Triangle()
+                for p in potentials:
+                    t = Triangle(*p)
+                    area = t.area  # TODO Cehck for zero bias
+                    if (area < lowest_area or lowest_area == -1):
+                        lowest_area = area
+                        best_triangle = t
 
-        print('Current location:', self.loc)
+                # Set centroid of best triangle to new location
+                self.loc.x = best_triangle.centroid.x  # TODO check for zero bias
+                self.loc.y = best_triangle.centroid.y
 
-        # Append new location to track
-        self.ts_track.append(self.loc, sample_time)
+                if not math.isnan(self.loc.x):
+                    # print('Current location:', self.loc)
+                    pass
+                else:
+                    print('Nan encountered, exiting...')
+                    self.array.daq.close()
+                    sys.exit(0)
 
+            # Append new location to track
+            p = Point(*self.loc.p)
+
+            sample_time = self.array.radars[0][0].ts_data.time[-1]
+            self.ts_track.append(p, sample_time)
+
+            for i, radar in enumerate(itertools.chain(*self.array.radars)):
+                # print("=== RADAR {:} ===".format(i))
+                self.update_relative_positions(radar)
+                self.update_radius(radar, sample_time)
 
     def clear(self):
         pass

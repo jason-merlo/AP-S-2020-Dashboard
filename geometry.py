@@ -15,7 +15,7 @@ class Point(object):
 
     @property
     def p(self):
-        return (self.x, self.y)
+        return (self.x, self.y, self.z)
 
     @p.setter
     def p(self, *args):
@@ -24,7 +24,6 @@ class Point(object):
         self.y = 0
         self.z = 0
         alen = len(args)
-
         # if argument is tuple
         if alen == 1:
             if len(args[0]) != 0:
@@ -81,53 +80,72 @@ class Point(object):
         a = self.x**2 + self.y**2 + self.z**2
         return np.sqrt(a)
 
-    def __add__(self, a):
-        if isinstance(a, Point):
-            self.x += a.x
-            self.y += a.y
-            self.z += a.z
+    def __getitem__(self, i):
+        item = None
+        if i == 0:
+            item = self.x
+        elif i == 1:
+            item = self.y
+        elif i == 2:
+            item = self.z
         else:
-            self.x += a
-            self.y += a
-            self.z += a
+            raise IndexError("Index cannot exceed 2 for Point(x,y,z)")
+        return item
 
-        return self
+    def __len__(self):
+        return 3
+
+    def __add__(self, a):
+        ret = Point()
+        if isinstance(a, Point):
+            ret.x = self.x + a.x
+            ret.y = self.y + a.y
+            ret.z = self.z + a.z
+        else:
+            ret.x = self.x + a
+            ret.y = self.y + a
+            ret.z = self.z + a
+
+        return ret
 
     def __sub__(self, a):
+        ret = Point()
         if isinstance(a, Point):
-            self.x -= a.x
-            self.y -= a.y
-            self.z -= a.z
+            ret.x = self.x - a.x
+            ret.y = self.y - a.y
+            ret.z = self.z - a.z
         else:
-            self.x -= a
-            self.y -= a
-            self.z -= a
+            ret.x = self.x - a
+            ret.y = self.y - a
+            ret.z = self.z - a
 
-        return self
+        return ret
 
     def __mul__(self, a):
+        ret = Point()
         if isinstance(a, Point):
-            self.x *= a.x
-            self.y *= a.y
-            self.z *= a.z
+            ret.x = self.x * a.x
+            ret.y = self.y * a.y
+            ret.z = self.z * a.z
         else:
-            self.x *= a
-            self.y *= a
-            self.z *= a
+            ret.x = self.x * a
+            ret.y = self.y * a
+            ret.z = self.z * a
 
-        return self
+        return ret
 
     def __truediv__(self, a):
+        ret = Point()
         if isinstance(a, Point):
-            self.x /= a.x
-            self.y /= a.y
-            self.z /= a.z
+            ret.x = self.x / a.x
+            ret.y = self.y / a.y
+            ret.z = self.z / a.z
         else:
-            self.x /= a
-            self.y /= a
-            self.z /= a
+            ret.x = self.x / a
+            ret.y = self.y / a
+            ret.z = self.z / a
 
-        return self
+        return ret
 
     def __repr__(self):
         return '({:+7.3f}, {:+7.3f}, {:+7.3f})'.format(self.x, self.y, self.z)
@@ -200,7 +218,8 @@ class Circle(object):
 
         # One circle is contained within the other
         if dist < np.absolute(self.r - c.r):
-            if self.r > c.r:
+            #print("WARNING: Circles are contained within each other")
+            if self.r < c.r:
                 c1 = self
                 c2 = c
             else:
@@ -211,35 +230,47 @@ class Circle(object):
             dir.normalize()
             # ditance between circumferences
             dc = c1.r - c2.r - dist
-            mp_dist = dist + c2.r + dist / 2  # NOTE Changed mp_dist to dist
+            mp_dist = dist + c2.r + dc
 
             result = [dir * mp_dist]
         # Circles intersect
-        if dist < self.r + c.r:
+        elif dist < self.r + c.r and self.r != 0 and c.r != 0:
             # distance to midpoint within both circumferences
-            mp_dist = (self.r**2 - c.r**2 + 2 * dist) / 2 * dist
+            mp_dist = (self.r**2 - c.r**2 + dist**2) / (2 * dist)
             # distance to intersection from midpoint
-            height = np.sqrt(self.r**2 - mp_dist**2)
+            d2 = self.r**2 - mp_dist**2
+            if (d2 < 0):
+                print("WARNING: d2 is negative: ", d2, "*"*50)
+            height = np.sqrt(abs(d2))
             # Point object between both circumferences
-            # midpoint = self.c + mp_dist * (c.c - self.c) / 2
+            d_vec = (c.c - self.c)
+            midpoint = Point()
+            midpoint.x = self.c.x + (mp_dist * d_vec.x) / dist
+            midpoint.y = self.c.y + (mp_dist * d_vec.y) / dist
+            #midpoint = self.c + (mp_dist * d_vec) / dist
             # intersections
             P1 = Point()
             P2 = Point()
-            P1.x = c.c.x + height * (c.c.y - self.c.y) / dist
-            P1.y = c.c.y - height * (c.c.x - self.c.x) / dist
-            P2.x = c.c.x - height * (c.c.y - self.c.y) / dist
-            P2.y = c.c.y + height * (c.c.x - self.c.x) / dist
+            P1.x = midpoint.x + (height * d_vec.y) / dist
+            P1.y = midpoint.y - (height * d_vec.x) / dist
+            P2.x = midpoint.x - (height * d_vec.y) / dist
+            P2.y = midpoint.y + (height * d_vec.x) / dist
             result = [P1, P2]
         # circles do not intersect, and are not inside one another
         else:
+            #print("WARNING: No intersection found, using midpoint")
             # Calculate unit vector in direction of second circle
             dir = c.c - self.c
             dir.normalize()
             dc = (dist - self.r - c.r) / 2
-            mp_dist = dist - c.r - dc
-            result = [dir * mp_dist]
+            mp_dist = self.r + dc
+            result = [self.c + (dir * mp_dist)]
+            # print('c1', self, '\nc2', c, '\nmp', result)
 
         return result
+
+    def __repr__(self):
+        return 'Circle:\n\tC: {:}\tR: {:+6.3}'.format(self.c, self.r)
 
 
 class Triangle(object):

@@ -5,7 +5,7 @@ Contains TimeSeries class
 
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
-last_modified: 7/23/2018
+last_modified: 7/31/2018
 '''
 import numpy as np              # Storing data
 
@@ -42,6 +42,20 @@ class TimeSeries:
     @property
     def time(self):
         return self._time[:self.head_ptr]
+
+    @property
+    def shape(self):
+        '''
+        Returns the shape of a single data frame
+        '''
+        return self.frame_shape
+
+    @property
+    def type(self):
+        '''
+        Returns the type of data stored
+        '''
+        return self.dtype
 
     def append(self, data, time):
         '''
@@ -83,3 +97,6 @@ class TimeSeries:
 
     def __len__(self):
         return self.head_ptr
+
+    def __getitem__(self, i):
+        return self.data[i]

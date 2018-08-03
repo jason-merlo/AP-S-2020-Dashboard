@@ -90,7 +90,7 @@ class DAQ:
         self.t_sampling = threading.Thread(target=self.sample_loop)
         self.t_sampling.start()
 
-        self.last_time = 0
+        self.buffer = []
 
     def sample_loop(self):
         """
@@ -123,6 +123,8 @@ class DAQ:
                 np.random.randn(1) * 0.001 + 0.01
             self.time = time.time()
             sleep(sleep_time)
+            # Set the update event to True once data is read in
+            self.data_available.set()
         else:
             try:
                 self.in_stream.read_many_sample(
@@ -130,10 +132,12 @@ class DAQ:
                     number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
                     timeout=1.0)
                 self.time = time.time()  # +/- 16 us
+                self.buffer.append((self.data, self.time))
+                # Set the update event to True once data is read in
+                self.data_available.set()
+                print('received update')
             except nidaqmx.errors.DaqError as err:
                 print("DAQ exception caught: {0}\n".format(err))
-        # Set the update event to True once data is read in
-        self.data_available.set()
 
     def close(self):
         print("Stopping sampling thread...")

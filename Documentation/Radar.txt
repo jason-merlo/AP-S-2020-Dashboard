@@ -1,0 +1,14 @@
+Radar Class
+
+Purpose:
+Hold radar information and basic signal processing
+
+Member Functions:
+__init__()
+compute_fft()
+
+Member Data:
+daq		(<daq_object>)
+current_data 	(ndarray: num_channels, num_samples)
+data		(ndarray: x, num_channels, num_samples)
+current_fft_data

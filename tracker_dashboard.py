@@ -27,10 +27,36 @@ from geometry import Point              # Radar locations
 from data_window import DataWindow
 
 # === CONSTANTS ===============================================================
-DAQ_SAMPLE_SIZE = 4096   # Hardware max = 4096
+DAQ_SAMPLE_SIZE = 2048   # Hardware max = 4096
 DAQ_SAMPLE_RATE = 31250  # Hz - hardware max = 31250
-ZERO_PAD_FACTOR = 24     # FFT_SIZE = 65536
-FFT_SIZE = DAQ_SAMPLE_SIZE * ZERO_PAD_FACTOR
+FFT_WINDOW_SIZE = 4096
+FFT_SIZE = 2**16
+
+# saved parameters - Working well for slow shapes - 8/3/2018
+# DAQ_SAMPLE_SIZE = 2048   # Hardware max = 4096
+# DAQ_SAMPLE_RATE = 31250  # Hz - hardware max = 31250
+# FFT_WINDOW_SIZE = 4096
+# FFT_SIZE = 2**15
+
+
+# ===============================
+# DEBUG
+import traceback
+import warnings
+import sys
+
+def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
+
+    log = file if hasattr(file,'write') else sys.stderr
+    traceback.print_stack(file=log)
+    log.write(warnings.formatwarning(message, category, filename, lineno, line))
+
+warnings.showwarning = warn_with_traceback
+
+# ===============================
+
+
+
 
 
 def init_daq():
@@ -76,11 +102,13 @@ def main():
     array_shape = (2, 2)
     array_indices = ((0, 3),
                      (1, 2))
-    array_dims = ((Point(0,     0),  Point(0,     0.081)),
-                  (Point(0.081, 0),  Point(0.081, 0.081)))  # m
+    # array_dims = ((Point(0,     0),  Point(0.081,      0)),
+    #               (Point(0, -0.081), Point(0.081, -0.081)))  # m
+    array_dims = ((Point(-0.0405,  0.0405), Point(0.0405,  0.0405)),
+                  (Point(-0.0405, -0.0405), Point(0.0405, -0.0405)))  # m
     radar_array = radar.RadarArray(
-        daq, array_shape, fft_size=FFT_SIZE, locations=array_dims, indices=array_indices)
-    tracker2d = tracker.Tracker2D(radar_array)
+        daq, fft_size=FFT_SIZE, fft_window_size=FFT_WINDOW_SIZE, locations=array_dims, indices=array_indices)
+    tracker2d = tracker.Tracker2D(daq, radar_array)
 
     # Instantiate and display data-viewing window (close gracefully on failure)
     try:
@@ -93,10 +121,16 @@ def main():
         signal_handler()
 
     # Set data-viewing window update timer
-    timer = pg.QtCore.QTimer()
-    timer.timeout.connect(data_win.update_gui)
+    gui_timer = pg.QtCore.QTimer()
+    gui_timer.timeout.connect(data_win.update_gui)
     # Only update 2x as fast as new data arrives
-    timer.start(daq.sample_size / daq.sample_rate * 500)  # in ms
+    gui_timer.start(daq.sample_size / daq.sample_rate * 500)  # in ms
+
+    # Radar update timer
+    tracker_timer = pg.QtCore.QTimer()
+    tracker_timer.timeout.connect(tracker2d.update)
+    # Only update 2x as fast as new data arrives
+    tracker_timer.start(daq.sample_size / daq.sample_rate * 500)  # in ms
 
     # ------ Run Qt program ------ #
     sys.exit(app.exec_())

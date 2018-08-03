@@ -37,11 +37,11 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         # Set up fmax plot
         self.vmax_plot.setDownsampling(mode='peak')
         self.vmax_plot.setClipToView(True)
-        self.vmax_plot.setRange(xRange=[-vmax_len, 0], yRange=[-10, 10])
+        self.vmax_plot.setRange(xRange=[-vmax_len, 0], yRange=[-1.5, 1.5])
         self.vmax_plot.setLimits(
             xMax=0, yMax=20, yMin=-20)
         self.vmax_pw = self.vmax_plot.plot()
-        self.vmax_plot.setLabel('left', text="Velocity", units="m/s")
+        self.vmax_plot.setLabel('left', text="Radial Velocity", units="m/s")
         self.vmax_ax_bottom = self.vmax_plot.getAxis('bottom')
         self.vmax_ax_bottom.setScale(self.update_period)
         self.vmax_plot.setLabel('bottom', text="Time", units="s")
@@ -68,15 +68,18 @@ class RadarWidget(pg.GraphicsLayoutWidget):
 
     def update_vmax(self):
         # Update fmax graph
-        vmax_data = self.radar.ts_drho.data
+        vmax_data = self.radar.ts_v.data#self.radar.ts_drho.data
         vmax_ptr = self.radar.ts_v.head_ptr
         self.vmax_pw.setData(vmax_data)
         self.vmax_pw.setPos(-vmax_ptr, 0)
 
         # draw max FFT line
-        self.fft_line.setValue(self.radar.fmax)
-        self.vmax_plot.setTitle(
-            'Max Velocity:\t{:+0.4f} (m/s)'.format(vmax_data[-1]))
+        self.fft_line.setValue(self.radar.fmax * 1.95)
+        try:
+            self.vmax_plot.setTitle(
+                'Max Velocity:\t{:+0.4f} (m/s)'.format(vmax_data[-1]))
+        except:
+            pass
 
     def update_fft(self):
         self.fft_pw.setData(self.radar.cfft_data)
@@ -97,7 +100,6 @@ class RadarWidget(pg.GraphicsLayoutWidget):
         # print('%0.2f fps' % self.fps)
 
     def update(self):
-        self.radar.update()
         self.update_fft()
         self.update_vmax()
         self.update_fps()
