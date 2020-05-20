@@ -106,9 +106,9 @@ class Application(object):
         receiver_list = (radar.Radar(self.data_mgr, 0, Point(-0.0405, -0.0405),
                                      f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
                          radar.Radar(self.data_mgr, 1, Point(+0.0405, -0.0405),
-                                     f0=5.8e9, , fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
+                                     f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
                          radar.Radar(self.data_mgr, 2, Point(+.0405, +0.0405),
-                                     f0=5.8e9, , fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
+                                     f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
                          radar.Radar(self.data_mgr, 3, Point(-0.0405, +0.0405),
                                      f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE))
 
