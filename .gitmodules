@@ -1,0 +1,3 @@
+[submodule "radar_widgets"]
+	path = radar_widgets
+	url = https://gitlab.msu.edu/delta/radar_widgets.git
