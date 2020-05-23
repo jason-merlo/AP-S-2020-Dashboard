@@ -12,8 +12,7 @@ import pyqtgraph as pg                  # Graph Elements
 from pyqtgraph import QtCore, QtGui     # Qt Elements
 from custom_ui import QHLine             # Horizontal dividers
 # === GUI Panels ===
-from pyratk.widgets import fft_widget
-
+from pyratk.widgets import fft_widget, iq_widget
 
 class GraphPanel(pg.LayoutWidget):
     def __init__(self, radar_array):
@@ -22,25 +21,42 @@ class GraphPanel(pg.LayoutWidget):
         # Copy member objects
         self.radar_array = radar_array
 
-        # Instantiate RadarWidget objects and widgets add to GraphPanel
-        self.rw_array = []  # [row, col]
+        # Instantiate IQWidget objects and widgets add to GraphPanel
+        self.iq_widget_array = []  # [row, col]
 
         for i, row in enumerate(self.radar_array):
-            rw_row = []
+            iqw_row = []
+
+            for j, radar in enumerate(row):
+                w = iq_widget.IQWidget(radar)
+                iqw_row.append(w)
+                self.addWidget(iqw_row[-1])
+
+            self.iq_widget_array.append(iqw_row)
+            self.nextRow()
+
+        # Instantiate FFTWidget objects and widgets add to GraphPanel
+        self.fft_widget_array = []  # [row, col]
+
+        for i, row in enumerate(self.radar_array):
+            fftw_row = []
 
             for j, radar in enumerate(row):
                 w = fft_widget.FftWidget(radar, vmax_len=100,
                                          show_max_plot=False)
-                # w.vmax_plot.register(
-                #     'radar_widget_{:}'.format(i * len(row) + j))
-                rw_row.append(w)
-                self.addWidget(rw_row[-1])
+                fftw_row.append(w)
+                self.addWidget(fftw_row[-1])
 
-            self.rw_array.append(rw_row)
+            self.fft_widget_array.append(fftw_row)
             self.nextRow()
 
         # Link scaling of plots
-        flat_list = [x for sublist in self.rw_array for x in sublist]
+        flat_list = [x for sublist in self.iq_widget_array for x in sublist]
+        for idx, graph in enumerate(flat_list):
+            if idx > 0:
+                graph.iq_plot.setXLink(flat_list[idx-1].iq_plot)
+                graph.iq_plot.setYLink(flat_list[idx-1].iq_plot)
+        flat_list = [x for sublist in self.fft_widget_array for x in sublist]
         for idx, graph in enumerate(flat_list):
             if idx > 0:
                 graph.fft_plot.setXLink(flat_list[idx-1].fft_plot)
@@ -50,12 +66,18 @@ class GraphPanel(pg.LayoutWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
 
     def update(self):
-        for row in self.rw_array:
+        for row in self.iq_widget_array:
+            for rw in row:
+                rw.update()
+        for row in self.fft_widget_array:
             for rw in row:
                 rw.update()
 
     def reset(self):
-        for row in self.rw_array:
+        for row in self.iq_widget_array:
+            for rw in row:
+                rw.reset()
+        for row in self.fft_widget_array:
             for rw in row:
                 rw.reset()
 

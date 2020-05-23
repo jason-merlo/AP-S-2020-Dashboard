@@ -16,6 +16,7 @@ import signal                       # handle escape to exit
 import multiprocessing
 import time
 
+from profilehooks import profile
 
 class DataWindow(QtGui.QTabWidget):
     def __init__(self, app, data_mgr, radar_array, parent=None):
@@ -68,11 +69,16 @@ class DataWindow(QtGui.QTabWidget):
     def connect_signals(self):
         self.data_mgr.reset_signal.connect(self.reset)
 
+    # @profile(immediate=True)
     def update(self):
         # Do not update graphs is no new data is being produced
         if not self.data_mgr.paused or self.step_data:
-            self.graph_panel.update()
-            self.step_data -= 1  # decrease step from button once update occurs
+            try:
+                self.graph_panel.update()
+                self.step_data -= 1  # decrease step from button once update occurs
+            except Exception as e:
+                print('Exception in update:', e)
+                self.data_mgr.close()
 
     def reset(self):
         """Reset all gui elements."""
@@ -84,6 +90,7 @@ class DataWindow(QtGui.QTabWidget):
         elif event.key() == QtCore.Qt.Key_R:
             self.data_mgr.reset()
         elif event.key() == QtCore.Qt.Key_Escape:
+            self.data_mgr.close()
             os.kill(os.getpid(), signal.SIGINT)
         elif event.key() == QtCore.Qt.Key_Right:
             self.control_panel.step_right_button_handler()

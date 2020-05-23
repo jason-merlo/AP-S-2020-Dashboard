@@ -15,7 +15,7 @@ import sys                              # Exit gracefully
 import traceback                        # Handling errors gracefully
 # === Sampling / Hardware ===
 from pyratk.acquisition.data_mgr import DataManager
-from pyratk.acquisition.mcdaq import mcdaq
+from pyratk.acquisition.mcdaq_win import mcdaq_win
 from pyratk.radars import radar    # RadaryArray object
 # === Tracking ===
 from pyratk.trackers import tracker  # 2D tracker object
@@ -29,6 +29,7 @@ import warnings
 
 import numpy as np
 import time
+
 
 # === CONSTANTS ===============================================================
 DEFAULT_PATH = 'aps_radar_testing.hdf5'
@@ -83,17 +84,17 @@ class Application(object):
         print('Program exiting...')
         sys.exit(0)
 
-    def update_step(self):
-        """Update tracker with new data and draw to graphs."""
-        self.data_win.update()
+    # def update_step(self):
+    #     """Update tracker with new data and draw to graphs."""
+    #     self.data_win.update()
 
     def run(self):
         """Configure main multi-doppler tracking application functions."""
         # === INIT ============================================================
         # Create application context and setup sampler and signal handler
         app = pg.QtGui.QApplication([])
-        daq = mcdaq(sample_rate=DAQ_SAMPLE_RATE,
-                    sample_chunk_size=DAQ_CHUNK_SIZE)
+        daq = mcdaq_win(sample_rate=DAQ_SAMPLE_RATE,
+                        sample_chunk_size=DAQ_CHUNK_SIZE)
 
         # Create data manager object for DAQ and playback
         self.data_mgr = DataManager(db=DEFAULT_PATH, daq=daq)
@@ -103,13 +104,13 @@ class Application(object):
         self.init_signal_handler(app)
 
         # Array discription
-        receiver_list = (radar.Radar(self.data_mgr, 0, Point(-0.0405, -0.0405),
+        receiver_list = (radar.Radar(self.data_mgr, (1, 3), Point(-0.0405, -0.0405),
                                      f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
-                         radar.Radar(self.data_mgr, 1, Point(+0.0405, -0.0405),
+                         radar.Radar(self.data_mgr, (5, 7), Point(+0.0405, -0.0405),
                                      f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
-                         radar.Radar(self.data_mgr, 2, Point(+.0405, +0.0405),
+                         radar.Radar(self.data_mgr, (0, 2), Point(+.0405, +0.0405),
                                      f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
-                         radar.Radar(self.data_mgr, 3, Point(-0.0405, +0.0405),
+                         radar.Radar(self.data_mgr, (4, 6), Point(-0.0405, +0.0405),
                                      f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE))
 
         receiver_array = radar.RadarArray(self.data_mgr, receiver_list)
@@ -118,12 +119,11 @@ class Application(object):
         # Instantiate and display data-viewing window
         # (close gracefully on failure)
         try:
-            radar_graph_list = ((receiver_list[3], receiver_list[2]),
-                                (receiver_list[0], receiver_list[1]))
+            radar_graph_list = ((*receiver_list,),)
             # radar_graph_list = ((radar_list[0],),)
             self.data_win = DataWindow(
                 app, self.data_mgr, radar_graph_list)
-            self.data_win.setGeometry(160, 140, 1400, 800)
+            self.data_win.setGeometry(160, 140, 2000, 800)
             # self.data_win.showMaximized()
             self.data_win.show()
         except Exception:
@@ -132,7 +132,10 @@ class Application(object):
             self.signal_handler()
 
         # Connect events for data processing
-        receiver_array.data_available_signal.connect(self.data_win.update)
+        # receiver_array.data_available_signal.connect(self.data_win.update)
+        timer = pg.QtCore.QTimer()
+        timer.timeout.connect(self.data_win.update)
+        timer.start(50)
 
         # Start sampling
         daq.start()
