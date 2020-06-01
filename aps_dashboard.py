@@ -34,11 +34,15 @@ import time
 # === CONSTANTS ===============================================================
 DEFAULT_PATH = 'aps_radar_testing.hdf5'
 
-DAQ_CHUNK_SIZE = 5000
-DAQ_SAMPLE_RATE = 50000
+PRF = int(1/4000e-6)
 
-FFT_WIN_SIZE = int(DAQ_CHUNK_SIZE * 2)
-FFT_SIZE = 2**17
+DAQ_SAMPLE_RATE = 50000
+DAQ_CHUNK_SIZE = int(DAQ_SAMPLE_RATE / PRF)
+
+# FFT_WIN_SIZE = int(DAQ_CHUNK_SIZE * 1)
+FFT_WIN_SIZE = DAQ_CHUNK_SIZE
+# FFT_SIZE = 2**12
+FFT_SIZE = FFT_WIN_SIZE
 
 # == Debug Stats ===
 min_freq = DAQ_SAMPLE_RATE / FFT_SIZE
