@@ -24,29 +24,26 @@ class GraphPanel(pg.LayoutWidget):
         # Instantiate IQWidget objects and widgets add to GraphPanel
         self.iq_widget_array = []  # [row, col]
 
+        iqw_row = []
         for radar in self.radar_array:
-            iqw_row = []
-
             w = iq_widget.IQWidget(radar)
             iqw_row.append(w)
-            self.addWidget(iqw_row[-1])
-
+            self.addWidget(w)
         self.iq_widget_array.append(iqw_row)
         self.nextRow()
 
         # Instantiate FFTWidget objects and widgets add to GraphPanel
         self.fft_widget_array = []  # [row, col]
 
-        for row in self.radar_array:
-            fftw_row = []
 
+        fftw_row = []
+        for radar in self.radar_array:
             # w = spectrogram_widget.SpectrogramWidget(radar, spectrogram_length=1000,
             #                          show_max_plot=True)
-            w = fft_widget.FftWidget(radar, fmax_len=1000,
+            w = fft_widget.FftWidget(radar, fmax_len=500,
                                      show_max_plot=True)
             fftw_row.append(w)
-            self.addWidget(fftw_row[-1])
-
+            self.addWidget(w)
         self.fft_widget_array.append(fftw_row)
         self.nextRow()
 
@@ -335,7 +332,7 @@ class ControlPanel(pg.LayoutWidget):
 # =============================================================================
 
     def rad_daq_handler(self):
-        print('WARNING: rad_daq_handler disabled for debugging')
+        print('(gui_panels) WARNING: rad_daq_handler disabled for debugging')
         # self.data_mgr.source = self.data_mgr.daq
         self.input_changed()
 
@@ -406,7 +403,7 @@ class ControlPanel(pg.LayoutWidget):
 
             ds = self.dataset_list.indexFromItem(selected_items[0]).data(1)
             self.data_mgr.load_dataset(ds)
-            print('(gui_panels.load_dataset) source:', self.data_mgr.source)
+            # print('(gui_panels.load_dataset) source:', self.data_mgr.source)
 
             # self.data_mgr.get_samples()
             self.update_source_buttons()

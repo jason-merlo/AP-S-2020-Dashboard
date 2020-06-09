@@ -15,6 +15,7 @@ import os
 import signal                       # handle escape to exit
 import multiprocessing
 import time
+import sys
 
 from profilehooks import profile
 
@@ -45,6 +46,8 @@ class DataWindow(QtGui.QTabWidget):
         # Create thread for updates
         # self.t_update = multiprocessing.Process(target=self.update())
         # self.t_update.start()
+
+        self.connect_signals()
 
     def tab_dataUI(self):
         # Create panel objects
@@ -80,9 +83,11 @@ class DataWindow(QtGui.QTabWidget):
             except Exception as e:
                 print('Exception in update:', e)
                 self.data_mgr.close()
+                print(sys.last_traceback)
 
     def reset(self):
         """Reset all gui elements."""
+        print('Graph Panel resetting.....')
         self.graph_panel.reset()
 
     def keyPressEvent(self, event):

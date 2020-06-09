@@ -111,6 +111,7 @@ class Application(object):
                             sample_chunk_size=DAQ_CHUNK_SIZE)
             self.data_mgr.add_source(mcdaq_daq)
             self.data_mgr.set_source(mcdaq_daq)
+            self.data_mgr.source.start()
         except Exception as e:
             print('Could not start DAQ:', e)
 
@@ -137,7 +138,7 @@ class Application(object):
             self.data_mgr,
             transmitter_list,
             receiver_list,
-            fast_fft_size=2**8,
+            fast_fft_size=2**12,
             slow_fft_size=2**10,
             slow_fft_len=100
         )
@@ -147,7 +148,7 @@ class Application(object):
         # (close gracefully on failure)
         try:
             self.data_win = DataWindow(
-                app, self.data_mgr, (*receiver_array.receivers,))
+                app, self.data_mgr, (*receiver_array.receivers[0:2],))
             self.data_win.setGeometry(160, 140, 1400, 1000)
             # self.data_win.showMaximized()
             self.data_win.show()
