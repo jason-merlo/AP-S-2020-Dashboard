@@ -19,12 +19,12 @@ import time
 from profilehooks import profile
 
 class DataWindow(QtGui.QTabWidget):
-    def __init__(self, app, data_mgr, radar_array, parent=None):
+    def __init__(self, app, data_mgr, radar, parent=None):
         super(DataWindow, self).__init__(parent)
         # Copy member objects
         self.app = app
         self.data_mgr = data_mgr
-        self.radar_array = radar_array
+        self.radar = radar
 
         # Setup window
         self.setWindowTitle('Radar Tracking Visualizer')
@@ -49,7 +49,7 @@ class DataWindow(QtGui.QTabWidget):
     def tab_dataUI(self):
         # Create panel objects
         layout = QtGui.QGridLayout()
-        self.graph_panel = GraphPanel(self.radar_array)
+        self.graph_panel = GraphPanel(self.radar)
 
         panel_list = [self.graph_panel]
         self.control_panel = ControlPanel(
@@ -72,23 +72,25 @@ class DataWindow(QtGui.QTabWidget):
     # @profile(immediate=True)
     def update(self):
         # Do not update graphs is no new data is being produced
-        if not self.data_mgr.paused or self.step_data:
+        if not self.data_mgr.source.paused or self.step_data:
             try:
                 self.graph_panel.update()
-                self.step_data -= 1  # decrease step from button once update occurs
+                if self.data_mgr.source is self.data_mgr.virt_daq:
+                    self.step_data -= 1  # decrease step from button once update occurs
             except Exception as e:
                 print('Exception in update:', e)
                 self.data_mgr.close()
 
     def reset(self):
         """Reset all gui elements."""
-        self.reset_panels()
+        self.graph_panel.reset()
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Space:
             self.control_panel.pause_button_handler()
         elif event.key() == QtCore.Qt.Key_R:
             self.data_mgr.reset()
+            self.reset()
         elif event.key() == QtCore.Qt.Key_Escape:
             self.data_mgr.close()
             os.kill(os.getpid(), signal.SIGINT)

@@ -12,7 +12,7 @@ import pyqtgraph as pg                  # Graph Elements
 from pyqtgraph import QtCore, QtGui     # Qt Elements
 from custom_ui import QHLine             # Horizontal dividers
 # === GUI Panels ===
-from pyratk.widgets import fft_widget, iq_widget
+from pyratk.widgets import fft_widget, spectrogram_widget, iq_widget
 
 class GraphPanel(pg.LayoutWidget):
     def __init__(self, radar_array):
@@ -24,31 +24,31 @@ class GraphPanel(pg.LayoutWidget):
         # Instantiate IQWidget objects and widgets add to GraphPanel
         self.iq_widget_array = []  # [row, col]
 
-        for i, row in enumerate(self.radar_array):
+        for radar in self.radar_array:
             iqw_row = []
 
-            for j, radar in enumerate(row):
-                w = iq_widget.IQWidget(radar)
-                iqw_row.append(w)
-                self.addWidget(iqw_row[-1])
+            w = iq_widget.IQWidget(radar)
+            iqw_row.append(w)
+            self.addWidget(iqw_row[-1])
 
-            self.iq_widget_array.append(iqw_row)
-            self.nextRow()
+        self.iq_widget_array.append(iqw_row)
+        self.nextRow()
 
         # Instantiate FFTWidget objects and widgets add to GraphPanel
         self.fft_widget_array = []  # [row, col]
 
-        for i, row in enumerate(self.radar_array):
+        for row in self.radar_array:
             fftw_row = []
 
-            for j, radar in enumerate(row):
-                w = fft_widget.FftWidget(radar, vmax_len=100,
-                                         show_max_plot=False)
-                fftw_row.append(w)
-                self.addWidget(fftw_row[-1])
+            # w = spectrogram_widget.SpectrogramWidget(radar, spectrogram_length=1000,
+            #                          show_max_plot=True)
+            w = fft_widget.FftWidget(radar, fmax_len=1000,
+                                     show_max_plot=True)
+            fftw_row.append(w)
+            self.addWidget(fftw_row[-1])
 
-            self.fft_widget_array.append(fftw_row)
-            self.nextRow()
+        self.fft_widget_array.append(fftw_row)
+        self.nextRow()
 
         # Link scaling of plots
         flat_list = [x for sublist in self.iq_widget_array for x in sublist]
@@ -335,7 +335,8 @@ class ControlPanel(pg.LayoutWidget):
 # =============================================================================
 
     def rad_daq_handler(self):
-        self.data_mgr.source = self.data_mgr.daq
+        print('WARNING: rad_daq_handler disabled for debugging')
+        # self.data_mgr.source = self.data_mgr.daq
         self.input_changed()
 
     def rad_dataset_handler(self):
@@ -405,6 +406,7 @@ class ControlPanel(pg.LayoutWidget):
 
             ds = self.dataset_list.indexFromItem(selected_items[0]).data(1)
             self.data_mgr.load_dataset(ds)
+            print('(gui_panels.load_dataset) source:', self.data_mgr.source)
 
             # self.data_mgr.get_samples()
             self.update_source_buttons()

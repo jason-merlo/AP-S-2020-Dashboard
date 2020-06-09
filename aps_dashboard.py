@@ -29,27 +29,32 @@ import warnings
 
 import numpy as np
 import time
+from collections import namedtuple
 
 
 # === CONSTANTS ===============================================================
 DEFAULT_PATH = 'aps_radar_testing.hdf5'
 
-PRF = int(1/4000e-6)
+DURATION = 1500e-6
+PRF = int(1/DURATION)
+BW = 100e6
 
-DAQ_SAMPLE_RATE = 50000
-DAQ_CHUNK_SIZE = int(DAQ_SAMPLE_RATE / PRF)
+DAQ_SAMPLE_RATE = int(100e3)
+DAQ_CHUNK_SIZE = int(DAQ_SAMPLE_RATE * DURATION)
 
 # FFT_WIN_SIZE = int(DAQ_CHUNK_SIZE * 1)
 FFT_WIN_SIZE = DAQ_CHUNK_SIZE
 # FFT_SIZE = 2**12
-FFT_SIZE = FFT_WIN_SIZE
+FFT_SIZE = FFT_WIN_SIZE * 100
+print('FFT_WIN_SIZE:', FFT_WIN_SIZE)
+print('FFT_SIZE:', FFT_SIZE)
 
 # == Debug Stats ===
 min_freq = DAQ_SAMPLE_RATE / FFT_SIZE
 print('FREQUENCY_RES: {:1.6f} Hz'.format(min_freq))
 c = 299792458  # m/s
-min_vel = (c * 5.8e9 / (-min_freq + 5.8e9)) - c
-print('VELOCITY_RES: {:1.6f} mm/s'.format(min_vel * 1000))
+min_dist = DURATION / BW * c * min_freq
+print('VELOCITY_RES: {:1.6f} mm'.format(min_dist * 1000))
 
 
 # === DEBUG ===================================================================
@@ -97,37 +102,53 @@ class Application(object):
         # === INIT ============================================================
         # Create application context and setup sampler and signal handler
         app = pg.QtGui.QApplication([])
-        daq = mcdaq_win(sample_rate=DAQ_SAMPLE_RATE,
-                        sample_chunk_size=DAQ_CHUNK_SIZE)
 
         # Create data manager object for DAQ and playback
-        self.data_mgr = DataManager(db=DEFAULT_PATH, daq=daq)
-        self.data_mgr.set_source(daq)
+        self.data_mgr = DataManager(db=DEFAULT_PATH)
+
+        try:
+            mcdaq_daq = mcdaq_win(sample_rate=DAQ_SAMPLE_RATE,
+                            sample_chunk_size=DAQ_CHUNK_SIZE)
+            self.data_mgr.add_source(mcdaq_daq)
+            self.data_mgr.set_source(mcdaq_daq)
+        except Exception as e:
+            print('Could not start DAQ:', e)
+
 
         # Set up program exit routine
         self.init_signal_handler(app)
 
-        # Array discription
-        receiver_list = (radar.Radar(self.data_mgr, (1, 3), Point(-0.0405, -0.0405),
-                                     f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
-                         radar.Radar(self.data_mgr, (5, 7), Point(+0.0405, -0.0405),
-                                     f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
-                         radar.Radar(self.data_mgr, (0, 2), Point(+.0405, +0.0405),
-                                     f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE),
-                         radar.Radar(self.data_mgr, (4, 6), Point(-0.0405, +0.0405),
-                                     f0=5.8e9, fft_size=FFT_SIZE, fft_win_size=FFT_WIN_SIZE))
+        # Transmitter parameters
+        Pulse = namedtuple('Pulse', ['fc', 'bw', 'delay'])
+        pulses = (Pulse(5.825e9, 100e6, 1500e-6),)
+        TransmitterTuple = namedtuple('Transmitter', ['location', 'pulses'])
+        transmitter_list = (TransmitterTuple(Point(0, 0, 0), pulses),)
 
-        receiver_array = radar.RadarArray(self.data_mgr, receiver_list)
+        # Receiver parameters
+        ReceiverTuple = namedtuple('Receiver', ['daq_index', 'location'])
+        receiver_list = (
+            ReceiverTuple(daq_index=(1, 3), location=Point(0, 0, 0)),
+            ReceiverTuple(daq_index=(5, 7), location=Point(0, 0, 0)),
+            ReceiverTuple(daq_index=(0, 2), location=Point(0, 0, 0)),
+            ReceiverTuple(daq_index=(4, 6), location=Point(0, 0, 0))
+        )
+
+        receiver_array = radar.Radar(
+            self.data_mgr,
+            transmitter_list,
+            receiver_list,
+            fast_fft_size=2**8,
+            slow_fft_size=2**10,
+            slow_fft_len=100
+        )
 
         # === GUI =============================================================
         # Instantiate and display data-viewing window
         # (close gracefully on failure)
         try:
-            radar_graph_list = ((*receiver_list,),)
-            # radar_graph_list = ((radar_list[0],),)
             self.data_win = DataWindow(
-                app, self.data_mgr, radar_graph_list)
-            self.data_win.setGeometry(160, 140, 2000, 800)
+                app, self.data_mgr, (*receiver_array.receivers,))
+            self.data_win.setGeometry(160, 140, 1400, 1000)
             # self.data_win.showMaximized()
             self.data_win.show()
         except Exception:
@@ -139,10 +160,10 @@ class Application(object):
         # receiver_array.data_available_signal.connect(self.data_win.update)
         timer = pg.QtCore.QTimer()
         timer.timeout.connect(self.data_win.update)
-        timer.start(50)
+        timer.start(30)
 
         # Start sampling
-        daq.start()
+        # daq.start()
 
         # ------ Run Qt program ------ #
         sys.exit(app.exec_())
