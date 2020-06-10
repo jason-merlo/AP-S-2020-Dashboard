@@ -44,8 +44,7 @@ DAQ_CHUNK_SIZE = int(DAQ_SAMPLE_RATE * DURATION)
 
 # FFT_WIN_SIZE = int(DAQ_CHUNK_SIZE * 1)
 FFT_WIN_SIZE = DAQ_CHUNK_SIZE
-# FFT_SIZE = 2**12
-FFT_SIZE = FFT_WIN_SIZE * 100
+FFT_SIZE = 2**12
 print('FFT_WIN_SIZE:', FFT_WIN_SIZE)
 print('FFT_SIZE:', FFT_SIZE)
 
@@ -138,7 +137,7 @@ class Application(object):
             self.data_mgr,
             transmitter_list,
             receiver_list,
-            fast_fft_size=2**12,
+            fast_fft_size=FFT_SIZE,
             slow_fft_size=2**10,
             slow_fft_len=100
         )
