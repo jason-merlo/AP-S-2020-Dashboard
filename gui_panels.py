@@ -469,13 +469,13 @@ class ControlPanel(pg.LayoutWidget):
             if results[2] != subject:
                 subject_removed = subject
 
-            # Remove hard-links for attributes removed
-            if subject_removed or labels_removed:
-                print("(DEBUG) labels_removed: ", labels_removed)
-                print("(DEBUG) subject_removed: ", subject_removed)
-                self.data_mgr.remove_attributes(name,
-                                                labels_removed,
-                                                subject_removed)
+                # Remove hard-links for attributes removed
+                if subject_removed or labels_removed:
+                    print("(DEBUG) labels_removed: ", labels_removed)
+                    print("(DEBUG) subject_removed: ", subject_removed)
+                    self.data_mgr.remove_attributes(name,
+                                                    labels_removed,
+                                                    subject_removed)
 
             # If "save" button selected it TRUE
             if results[-1]:

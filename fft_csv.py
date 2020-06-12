@@ -1,4 +1,4 @@
-# Loads in DAQami CSV and plots FFT
+# Loads in DAQami CSV file and plots FFT
 
 import numpy as np
 import matplotlib.pyplot as plt

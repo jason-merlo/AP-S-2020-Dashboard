@@ -4,6 +4,8 @@ Tracker Dashboard Class.
 
 Main file for quad doppler radar tracking project.
 
+Creates the DAQ instance, radar object, and configures main GUI window.
+
 Author: Jason Merlo
 Maintainer: Jason Merlo (merlojas@msu.edu)
 """
@@ -139,7 +141,7 @@ class Application(object):
             receiver_list,
             fast_fft_size=2**9,
             slow_fft_size=2**7,
-            slow_fft_len=100
+            slow_fft_len=128
         )
 
         # === GUI =============================================================
