@@ -12,7 +12,7 @@ import pyqtgraph as pg                  # Graph Elements
 from pyqtgraph import QtCore, QtGui     # Qt Elements
 from custom_ui import QHLine             # Horizontal dividers
 # === GUI Panels ===
-from pyratk.widgets import fft_widget, spectrogram_widget, iq_widget
+from pyratk.widgets import fft_widget, spectrogram_widget, iq_widget, range_doppler_widget
 
 class GraphPanel(pg.LayoutWidget):
     def __init__(self, radar_array):
@@ -38,10 +38,11 @@ class GraphPanel(pg.LayoutWidget):
 
         fftw_row = []
         for radar in self.radar_array:
+            w = range_doppler_widget.RangeDopplerWidget(radar)
             # w = spectrogram_widget.SpectrogramWidget(radar, spectrogram_length=1000,
             #                          show_max_plot=True)
-            w = fft_widget.FftWidget(radar, fmax_len=500,
-                                     show_max_plot=True)
+            # w = fft_widget.FftWidget(radar, fmax_len=500,
+            #                          show_max_plot=True)
             fftw_row.append(w)
             self.addWidget(w)
         self.fft_widget_array.append(fftw_row)
@@ -54,10 +55,10 @@ class GraphPanel(pg.LayoutWidget):
                 graph.iq_plot.setXLink(flat_list[idx-1].iq_plot)
                 graph.iq_plot.setYLink(flat_list[idx-1].iq_plot)
         flat_list = [x for sublist in self.fft_widget_array for x in sublist]
-        for idx, graph in enumerate(flat_list):
-            if idx > 0:
-                graph.fft_plot.setXLink(flat_list[idx-1].fft_plot)
-                graph.fft_plot.setYLink(flat_list[idx-1].fft_plot)
+        # for idx, graph in enumerate(flat_list):
+        #     if idx > 0:
+        #         graph.fft_plot.setXLink(flat_list[idx-1].fft_plot)
+        #         graph.fft_plot.setYLink(flat_list[idx-1].fft_plot)
 
         # Remove extra margins around plot widgets
         self.layout.setContentsMargins(0, 0, 0, 0)

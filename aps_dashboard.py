@@ -137,8 +137,8 @@ class Application(object):
             self.data_mgr,
             transmitter_list,
             receiver_list,
-            fast_fft_size=FFT_SIZE,
-            slow_fft_size=2**10,
+            fast_fft_size=2**9,
+            slow_fft_size=2**7,
             slow_fft_len=100
         )
 
