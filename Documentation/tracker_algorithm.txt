@@ -1,9 +1,0 @@
-1) Initialize track location
-Loop:
-   2) Calculate radial distance to track from each radar
-   3) Sample doppler velocities and convert from spherical to cartesian on tracking plane
-   4) Update radius based on received doppler velocity and computed acceleration
-   5) Calculate intersection of radar radial distance circles
-   6) Find points from each circle forming the Triangle with the smallest area
-   7) Compute centroid of Triangle
-   8) Store centroid as new track location
