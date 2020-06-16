@@ -20,12 +20,13 @@ import sys
 from profilehooks import profile
 
 class DataWindow(QtGui.QTabWidget):
-    def __init__(self, app, data_mgr, radar, parent=None):
+    def __init__(self, app, data_mgr, radar, tracker, parent=None):
         super(DataWindow, self).__init__(parent)
         # Copy member objects
         self.app = app
         self.data_mgr = data_mgr
         self.radar = radar
+        self.tracker = tracker
 
         # Setup window
         self.setWindowTitle('Radar Tracking Visualizer')
@@ -52,7 +53,7 @@ class DataWindow(QtGui.QTabWidget):
     def tab_dataUI(self):
         # Create panel objects
         layout = QtGui.QGridLayout()
-        self.graph_panel = GraphPanel(self.radar)
+        self.graph_panel = GraphPanel(self.radar, self.tracker)
 
         panel_list = [self.graph_panel]
         self.control_panel = ControlPanel(

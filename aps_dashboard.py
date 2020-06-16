@@ -20,7 +20,8 @@ from pyratk.acquisition.data_mgr import DataManager
 from pyratk.acquisition.mcdaq_win import mcdaq_win
 from pyratk.radars import radar    # RadaryArray object
 # === Tracking ===
-from pyratk.trackers import tracker  # 2D tracker object
+from pyratk.trackers import aps_tracker  # 2D tracker object
+from pyratk.datatypes.radar import TransmitterTuple, ReceiverTuple
 # === Geometry primatives ===
 from pyratk.datatypes.geometry import Point  # Radar locations
 from pyratk.datatypes.motion import StateMatrix
@@ -123,11 +124,9 @@ class Application(object):
         # Transmitter parameters
         Pulse = namedtuple('Pulse', ['fc', 'bw', 'delay'])
         pulses = (Pulse(5.825e9, 100e6, 1500e-6),)
-        TransmitterTuple = namedtuple('Transmitter', ['location', 'pulses'])
         transmitter_list = (TransmitterTuple(Point(0, 0, 0), pulses),)
 
         # Receiver parameters
-        ReceiverTuple = namedtuple('Receiver', ['daq_index', 'location'])
         receiver_list = (
             ReceiverTuple(daq_index=(1, 3), location=Point(0, 0, 0)),
             ReceiverTuple(daq_index=(5, 7), location=Point(0, 0, 0)),
@@ -144,12 +143,14 @@ class Application(object):
             slow_fft_len=128
         )
 
+        tracker = aps_tracker.ApsTracker(self.data_mgr, receiver_array)
+
         # === GUI =============================================================
         # Instantiate and display data-viewing window
         # (close gracefully on failure)
         try:
             self.data_win = DataWindow(
-                app, self.data_mgr, (*receiver_array.receivers[0:2],))
+                app, self.data_mgr, (*receiver_array.receivers[0:2],), tracker)
             self.data_win.setGeometry(160, 140, 1400, 1000)
             # self.data_win.showMaximized()
             self.data_win.show()

@@ -12,25 +12,30 @@ import pyqtgraph as pg                  # Graph Elements
 from pyqtgraph import QtCore, QtGui     # Qt Elements
 from custom_ui import QHLine             # Horizontal dividers
 # === GUI Panels ===
-from pyratk.widgets import fft_widget, spectrogram_widget, iq_widget, range_doppler_widget
+from pyratk.widgets import fft_widget, spectrogram_widget, iq_widget, range_doppler_widget, polar_tracker_widget
 
 class GraphPanel(pg.LayoutWidget):
-    def __init__(self, radar_array):
+    def __init__(self, radar_array, tracker):
         pg.LayoutWidget.__init__(self)
 
         # Copy member objects
         self.radar_array = radar_array
+        self.tracker = tracker
 
-        # Instantiate IQWidget objects and widgets add to GraphPanel
-        self.iq_widget_array = []  # [row, col]
-
-        iqw_row = []
-        for radar in self.radar_array:
-            w = iq_widget.IQWidget(radar)
-            iqw_row.append(w)
-            self.addWidget(w)
-        self.iq_widget_array.append(iqw_row)
+        self.tracker_widget = polar_tracker_widget.PolarTrackerWidget(tracker)
+        self.addWidget(self.tracker_widget, colspan=2)
         self.nextRow()
+
+        # # Instantiate IQWidget objects and widgets add to GraphPanel
+        # self.iq_widget_array = []  # [row, col]
+        #
+        # iqw_row = []
+        # for radar in self.radar_array:
+        #     w = iq_widget.IQWidget(radar)
+        #     iqw_row.append(w)
+        #     self.addWidget(w)
+        # self.iq_widget_array.append(iqw_row)
+        # self.nextRow()
 
         # Instantiate FFTWidget objects and widgets add to GraphPanel
         self.fft_widget_array = []  # [row, col]
@@ -49,11 +54,11 @@ class GraphPanel(pg.LayoutWidget):
         self.nextRow()
 
         # Link scaling of plots
-        flat_list = [x for sublist in self.iq_widget_array for x in sublist]
-        for idx, graph in enumerate(flat_list):
-            if idx > 0:
-                graph.iq_plot.setXLink(flat_list[idx-1].iq_plot)
-                graph.iq_plot.setYLink(flat_list[idx-1].iq_plot)
+        # flat_list = [x for sublist in self.iq_widget_array for x in sublist]
+        # for idx, graph in enumerate(flat_list):
+        #     if idx > 0:
+        #         graph.iq_plot.setXLink(flat_list[idx-1].iq_plot)
+        #         graph.iq_plot.setYLink(flat_list[idx-1].iq_plot)
         flat_list = [x for sublist in self.fft_widget_array for x in sublist]
         # for idx, graph in enumerate(flat_list):
         #     if idx > 0:
@@ -64,17 +69,19 @@ class GraphPanel(pg.LayoutWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
 
     def update(self):
-        for row in self.iq_widget_array:
-            for rw in row:
-                rw.update()
+        self.tracker_widget.update()
+        # for row in self.iq_widget_array:
+        #     for rw in row:
+        #         rw.update()
         for row in self.fft_widget_array:
             for rw in row:
                 rw.update()
 
     def reset(self):
-        for row in self.iq_widget_array:
-            for rw in row:
-                rw.reset()
+        self.tracker_widget.reset()
+        # for row in self.iq_widget_array:
+        #     for rw in row:
+        #         rw.reset()
         for row in self.fft_widget_array:
             for rw in row:
                 rw.reset()
@@ -244,6 +251,11 @@ class ControlPanel(pg.LayoutWidget):
         self.delete_dataset_button.clicked.connect(
             self.delete_dataset_button_handler)
 
+        self.export_dataset_button = QtGui.QPushButton(
+            'Export Selected Dataset to CSV')
+        self.export_dataset_button.clicked.connect(
+            self.export_dataset_button_handler)
+
         # =====================================================================
         # =====================================================================
 
@@ -258,6 +270,8 @@ class ControlPanel(pg.LayoutWidget):
         self.addWidget(self.edit_dataset_button)
         self.nextRow()
         self.addWidget(self.delete_dataset_button)
+        self.nextRow()
+        self.addWidget(self.export_dataset_button)
 
         # =====================================================================
         # =====================================================================
@@ -393,6 +407,28 @@ class ControlPanel(pg.LayoutWidget):
                 self.data_mgr.delete_dataset(item)
                 print("delete dataset...", item)
                 self.update_dataset_list()
+
+        self.menu_pause_restore()
+
+    def export_dataset_button_handler(self):
+        self.menu_pause_set()
+        # Get selected item.  If multiple selected, load first item in list
+        selected_items = self.dataset_list.selectedItems()
+        if selected_items:
+            item = self.dataset_list.indexFromItem(selected_items[0]).data(1)
+
+            title = 'Export'
+            export_path = '{}'.format(item.name.strip('/'))
+            message = "{:} will be exported to ./{:}".format(item.name, export_path)
+            options = QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel
+            default = QtGui.QMessageBox.Ok
+
+            buttonReply = QtGui.QMessageBox.question(
+                self, title, message, options, default)
+
+            if buttonReply == QtGui.QMessageBox.Ok:
+                self.load_dataset_button_handler()
+                self.data_mgr.save_csv(export_path)
 
         self.menu_pause_restore()
 
