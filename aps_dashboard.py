@@ -130,17 +130,17 @@ class Application(object):
         receiver_list = (
             ReceiverTuple(daq_index=(1, 3), location=Point(0, 0, 0)),
             ReceiverTuple(daq_index=(5, 7), location=Point(0, 0, 0)),
-            ReceiverTuple(daq_index=(0, 2), location=Point(0, 0, 0)),
-            ReceiverTuple(daq_index=(4, 6), location=Point(0, 0, 0))
+            #ReceiverTuple(daq_index=(0, 2), location=Point(0, 0, 0)),
+            #ReceiverTuple(daq_index=(4, 6), location=Point(0, 0, 0))
         )
 
         receiver_array = radar.Radar(
             self.data_mgr,
             transmitter_list,
             receiver_list,
-            fast_fft_size=2**9,
-            slow_fft_size=2**7,
-            slow_fft_len=128
+            fast_fft_size=2**12,
+            slow_fft_size=2**5,
+            slow_fft_len=2**5
         )
 
         tracker = aps_tracker.ApsTracker(self.data_mgr, receiver_array)
