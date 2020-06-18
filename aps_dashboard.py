@@ -21,7 +21,7 @@ from pyratk.acquisition.mcdaq_win import mcdaq_win
 from pyratk.radars import radar    # RadaryArray object
 # === Tracking ===
 from pyratk.trackers import aps_tracker  # 2D tracker object
-from pyratk.datatypes.radar import TransmitterTuple, ReceiverTuple
+from pyratk.datatypes.radar import TransmitterTuple, ReceiverTuple, Pulse
 # === Geometry primatives ===
 from pyratk.datatypes.geometry import Point  # Radar locations
 from pyratk.datatypes.motion import StateMatrix
@@ -38,25 +38,29 @@ from collections import namedtuple
 # === CONSTANTS ===============================================================
 DEFAULT_PATH = 'aps_radar_testing.hdf5'
 
-DURATION = 1500e-6
-PRF = int(1/DURATION)
+DELAY = 1500e-6
+PRF = int(1/DELAY)
 BW = 100e6
+FC = 5.825e9
 
 DAQ_SAMPLE_RATE = int(100e3)
-DAQ_CHUNK_SIZE = int(DAQ_SAMPLE_RATE * DURATION)
+DAQ_CHUNK_SIZE = int(DAQ_SAMPLE_RATE * DELAY)
+
+FAST_FFT_SIZE = 2**10
+SLOW_FFT_SIZE = 2**5
 
 # FFT_WIN_SIZE = int(DAQ_CHUNK_SIZE * 1)
-FFT_WIN_SIZE = DAQ_CHUNK_SIZE
-FFT_SIZE = 2**12
-print('FFT_WIN_SIZE:', FFT_WIN_SIZE)
-print('FFT_SIZE:', FFT_SIZE)
-
-# == Debug Stats ===
-min_freq = DAQ_SAMPLE_RATE / FFT_SIZE
-print('FREQUENCY_RES: {:1.6f} Hz'.format(min_freq))
-c = 299792458  # m/s
-min_dist = DURATION / BW * c * min_freq
-print('VELOCITY_RES: {:1.6f} mm'.format(min_dist * 1000))
+# FFT_WIN_SIZE = DAQ_CHUNK_SIZE
+# FFT_SIZE = 2**12
+# print('FFT_WIN_SIZE:', FFT_WIN_SIZE)
+# print('FFT_SIZE:', FFT_SIZE)
+#
+# # == Debug Stats ===
+# min_freq = DAQ_SAMPLE_RATE / FFT_SIZE
+# print('FREQUENCY_RES: {:1.6f} Hz'.format(min_freq))
+# c = 299792458  # m/s
+# min_dist = DURATION / BW * c * min_freq
+# print('VELOCITY_RES: {:1.6f} mm'.format(min_dist * 1000))
 
 
 # === DEBUG ===================================================================
@@ -122,8 +126,7 @@ class Application(object):
         self.init_signal_handler(app)
 
         # Transmitter parameters
-        Pulse = namedtuple('Pulse', ['fc', 'bw', 'delay'])
-        pulses = (Pulse(5.825e9, 100e6, 1500e-6),)
+        pulses = (Pulse(FC, BW, DELAY),)
         transmitter_list = (TransmitterTuple(Point(0, 0, 0), pulses),)
 
         # Receiver parameters
@@ -138,9 +141,9 @@ class Application(object):
             self.data_mgr,
             transmitter_list,
             receiver_list,
-            fast_fft_size=2**12,
-            slow_fft_size=2**5,
-            slow_fft_len=2**5
+            fast_fft_size=FAST_FFT_SIZE,
+            slow_fft_size=SLOW_FFT_SIZE,
+            slow_fft_len=SLOW_FFT_SIZE
         )
 
         tracker = aps_tracker.ApsTracker(self.data_mgr, receiver_array)
