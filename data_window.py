@@ -85,7 +85,7 @@ class DataWindow(QtGui.QTabWidget):
             except Exception as e:
                 print('Exception in update:', e)
                 self.data_mgr.close()
-                print(sys.last_traceback)
+                sys.exit()
 
     def reset(self):
         """Reset all gui elements."""
