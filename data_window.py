@@ -75,6 +75,7 @@ class DataWindow(QtGui.QTabWidget):
 
     # @profile(immediate=True)
     def update(self):
+        self.app.processEvents()
         # Do not update graphs is no new data is being produced
         if not self.data_mgr.source.paused or self.step_data:
             try:
