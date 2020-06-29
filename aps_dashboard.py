@@ -38,7 +38,7 @@ from collections import namedtuple
 # === CONSTANTS ===============================================================
 DEFAULT_PATH = 'aps_radar_testing.hdf5'
 
-DELAY = 1500e-6
+DELAY = 250e-6
 PRF = int(1/DELAY)
 BW = 100e6
 FC = 5.825e9
