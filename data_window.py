@@ -78,14 +78,15 @@ class DataWindow(QtGui.QTabWidget):
         self.app.processEvents()
         # Do not update graphs is no new data is being produced
         if not self.data_mgr.source.paused or self.step_data:
-            try:
-                self.graph_panel.update()
-                if self.data_mgr.source is self.data_mgr.virt_daq:
-                    self.step_data -= 1  # decrease step from button once update occurs
-            except Exception as e:
-                print('Exception in update:', e)
-                self.data_mgr.close()
-                sys.exit()
+            self.graph_panel.update()
+            if self.data_mgr.source is self.data_mgr.virt_daq:
+                self.step_data -= 1  # decrease step from button once update occurs
+            # try:
+            #
+            # except Exception as e:
+            #     print('Exception in update:', e)
+            #     self.data_mgr.close()
+            #     sys.exit()
 
     def reset(self):
         """Reset all gui elements."""
