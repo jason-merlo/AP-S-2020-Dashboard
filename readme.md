@@ -12,7 +12,7 @@ Additionally, Anaconda must be installed on the host machine to allow for the en
 
 This project uses [Anaconda](https://conda.io/docs/) Python environment manager to manage the environment, and packages for this project.  If Anaconda has not been installed, first install this from the [Anaconda project website](https://conda.io/miniconda.html).
 
-Once isntalled, the environment can be configured by navigating to the project root directory and typing: `conda env create -f environment.yml`
+Once isntalled, the environment can be configured by navigating to the project root directory and typing: `conda create --name <env_name> --file requirements.txt`
 
 ### Package Background
 
